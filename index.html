@@ -234,7 +234,7 @@
                         <i class="fa-solid fa-arrows-up-down mr-1.5 text-amber-600"></i> 2. MẶT CẮT DỌC (SIDE VIEW)
                     </h2>
                     <div class="w-full bg-slate-50 rounded-xl p-2 border border-slate-100 flex items-center justify-center">
-                        <svg id="svg-side" viewBox="0 0 400 240" class="w-full h-auto max-h-[190px]"></svg>
+                        <svg id="svg-side" viewBox="0 0 440 250" class="w-full h-auto max-h-[190px]"></svg>
                     </div>
                 </div>
 
@@ -244,7 +244,7 @@
                         <i class="fa-solid fa-table-cells-large mr-1.5 text-purple-600"></i> 3. MẶT CHIẾU BẰNG (TOP VIEW)
                     </h2>
                     <div class="w-full bg-slate-50 rounded-xl p-2 border border-slate-100 flex items-center justify-center">
-                        <svg id="svg-top" viewBox="0 0 400 240" class="w-full h-auto max-h-[190px]"></svg>
+                        <svg id="svg-top" viewBox="0 0 440 250" class="w-full h-auto max-h-[190px]"></svg>
                     </div>
                 </div>
 
@@ -821,45 +821,49 @@
             scene.add(sandMesh);
         }
 
-                // ------------------------------------------------------------
-        // 7. ĐỒ HỌA 2D CHI TIẾT ĐẦY ĐỦ THƯỚC ĐO & CHÚ THÍCH (GIỐNG PYTHON)
+                        // ------------------------------------------------------------
+        // 7. ĐỒ HỌA 2D CHI TIẾT (KHÔNG CẮT CHỮ, THỂ HIỆN RÕ ĐÁY CHỮ V)
         // ------------------------------------------------------------
         function ve2D(data) {
             // =========================================================
-            // 7.1 MẶT CẮT DỌC (SIDE VIEW) - ĐẦY ĐỦ THƯỚC ĐO NHẬP LIỆU
+            // 7.1 MẶT CẮT DỌC (SIDE VIEW)
             // =========================================================
             const svgSide = document.getElementById('svg-side');
             let pathCat = "";
             let thietKeDay = "";
             let thuocDo = "";
 
-            const yRim = 38;
-            const yBot = 165;
-            const yTimV = 205;
-            const xL = 60;
-            const xR = 340;
-            const xMid = 200;
+            // Tọa độ chuẩn (viewBox="0 0 440 250")
+            const yRim = 42;
+            const yBot = 165;       // Mức sàn mạn
+            const yTimV = 215;      // Điểm sâu nhất tim đáy V
+            const xL = 80;
+            const xR = 360;
+            const xMid = 220;
 
             // 1. THIẾT KẾ ĐÁY
             if (data.loaiDay === "Đáy bằng") {
                 thietKeDay = `
                     <line x1="${xL}" y1="${yBot}" x2="${xR}" y2="${yBot}" stroke="#78281f" stroke-width="4"/>
-                    <!-- Thước đo chiều sâu đáy phẳng -->
-                    <line x1="${xL - 15}" y1="${yRim}" x2="${xL - 15}" y2="${yBot}" stroke="#1e293b" stroke-width="1.8" marker-start="url(#arr-up)" marker-end="url(#arr-down)"/>
-                    <text x="${xL - 18}" y="${(yRim + yBot)/2}" font-size="8.5" font-weight="bold" fill="#1e293b" text-anchor="end" dominant-baseline="middle">Chiều sâu khoang</text>
+                    <!-- Thước đo chiều sâu khoang -->
+                    <line x1="${xL - 20}" y1="${yRim}" x2="${xL - 20}" y2="${yBot}" stroke="#1e293b" stroke-width="1.8" marker-start="url(#arr-up)" marker-end="url(#arr-down)"/>
+                    <text x="${xL - 26}" y="${(yRim + yBot)/2}" font-size="9" font-weight="bold" fill="#1e293b" text-anchor="end" dominant-baseline="middle">Chiều sâu khoang</text>
                 `;
             } else {
                 thietKeDay = `
-                    <polygon points="${xL},${yBot} ${xMid},${yTimV} ${xR},${yBot}" fill="#e5b869" stroke="#78281f" stroke-width="3"/>
-                    <line x1="${xL}" y1="${yBot}" x2="${xR}" y2="${yBot}" stroke="#8b5a2b" stroke-dasharray="3,3" stroke-width="1"/>
+                    <!-- Sàn đáy chữ V -->
+                    <polygon points="${xL},${yBot} ${xMid},${yTimV} ${xR},${yBot}" fill="#e5b869" stroke="#78281f" stroke-width="3.5"/>
+                    <line x1="${xL}" y1="${yBot}" x2="${xR}" y2="${yBot}" stroke="#8b5a2b" stroke-dasharray="3,3" stroke-width="1.2"/>
                     
-                    <!-- Thước đo chiều sâu mạn -->
-                    <line x1="${xL + 18}" y1="${yRim}" x2="${xL + 18}" y2="${yBot}" stroke="#0284c7" stroke-width="1.6" marker-start="url(#arr-up-blue)" marker-end="url(#arr-down-blue)"/>
-                    <text x="${xL + 22}" y="${(yRim + yBot)/2}" font-size="8.5" font-weight="bold" fill="#0284c7" dominant-baseline="middle">Chiều sâu mạn</text>
+                    <!-- 1. THƯỚC ĐO CHIỀU SÂU MẠN (RÕ RÀNG TỪ MÉP THÀNH XUỐNG SÀN MẠN) -->
+                    <line x1="${xL - 20}" y1="${yRim}" x2="${xL - 20}" y2="${yBot}" stroke="#0284c7" stroke-width="2" marker-start="url(#arr-up-blue)" marker-end="url(#arr-down-blue)"/>
+                    <!-- Nét gióng ngang sàn mạn -->
+                    <line x1="${xL - 28}" y1="${yBot}" x2="${xL}" y2="${yBot}" stroke="#0284c7" stroke-dasharray="2,2" stroke-width="1"/>
+                    <text x="${xL - 26}" y="${(yRim + yBot)/2}" font-size="9" font-weight="bold" fill="#0284c7" text-anchor="end" dominant-baseline="middle">Chiều sâu tại mạn</text>
                     
-                    <!-- Thước đo cạnh nghiêng chữ V -->
-                    <line x1="${xMid + 8}" y1="${yTimV - 2}" x2="${xR}" y2="${yBot + 12}" stroke="#16a34a" stroke-width="1.8" marker-start="url(#arr-v)" marker-end="url(#arr-v)"/>
-                    <text x="${(xMid + xR)/2 + 8}" y="${(yTimV + yBot)/2 + 16}" font-size="8.5" font-weight="bold" fill="#16a34a" text-anchor="middle">Chiều dài cạnh nghiêng chữ V</text>
+                    <!-- 2. THƯỚC ĐO CẠNH NGHIÊNG CHỮ V -->
+                    <line x1="${xMid + 6}" y1="${yTimV + 4}" x2="${xR + 4}" y2="${yBot + 12}" stroke="#16a34a" stroke-width="2" marker-start="url(#arr-green-dot)" marker-end="url(#arr-green-dot)"/>
+                    <text x="${(xMid + xR)/2 + 14}" y="${(yTimV + yBot)/2 + 18}" font-size="9" font-weight="bold" fill="#16a34a" text-anchor="middle">Chiều dài cạnh nghiêng chữ V</text>
                 `;
             }
 
@@ -875,7 +879,7 @@
 
                 thuocDo = `
                     <line x1="${xMid}" y1="${yRim}" x2="${xMid}" y2="${hCat}" stroke="#ea580c" stroke-width="2" marker-start="url(#arr-up-orange)" marker-end="url(#arr-down-orange)"/>
-                    <text x="${xMid + 6}" y="${(yRim + hCat)/2}" font-size="9" font-weight="bold" fill="#ea580c" dominant-baseline="middle">Độ hụt mặt cát từ mép thành</text>
+                    <text x="${xMid + 8}" y="${(yRim + hCat)/2}" font-size="9.5" font-weight="bold" fill="#ea580c" dominant-baseline="middle">Độ hụt mặt cát từ mép thành</text>
                 `;
 
             } else if (data.loaiMat === 2) {
@@ -889,13 +893,11 @@
                 }
 
                 thuocDo = `
-                    <!-- Đo đầu -->
                     <line x1="${xL + 35}" y1="${yRim}" x2="${xL + 35}" y2="${hDau}" stroke="#ea580c" stroke-width="1.8" marker-start="url(#arr-up-orange)" marker-end="url(#arr-down-orange)"/>
-                    <text x="${xL + 35}" y="${hDau + 16}" font-size="8.5" font-weight="bold" fill="#ea580c" text-anchor="middle">Độ hụt tại ĐẦU</text>
+                    <text x="${xL + 35}" y="${hDau + 16}" font-size="9" font-weight="bold" fill="#ea580c" text-anchor="middle">Độ hụt tại ĐẦU</text>
                     
-                    <!-- Đo đuôi -->
                     <line x1="${xR - 35}" y1="${yRim}" x2="${xR - 35}" y2="${hDuoi}" stroke="#0284c7" stroke-width="1.8" marker-start="url(#arr-up-blue)" marker-end="url(#arr-down-blue)"/>
-                    <text x="${xR - 35}" y="${hDuoi + 16}" font-size="8.5" font-weight="bold" fill="#0284c7" text-anchor="middle">Độ hụt tại ĐUÔI</text>
+                    <text x="${xR - 35}" y="${hDuoi + 16}" font-size="9" font-weight="bold" fill="#0284c7" text-anchor="middle">Độ hụt tại ĐUÔI</text>
                 `;
 
             } else if (data.loaiMat === 3) {
@@ -917,13 +919,11 @@
                 }
 
                 thuocDo = `
-                    <!-- 1. Độ hụt nền -->
-                    <line x1="${xL + 25}" y1="${yRim}" x2="${xL + 25}" y2="${hNen}" stroke="#ea580c" stroke-width="1.6" marker-start="url(#arr-up-orange)" marker-end="url(#arr-down-orange)"/>
-                    <text x="${xL + 25}" y="${(yRim + hNen)/2}" font-size="8" font-weight="bold" fill="#ea580c" text-anchor="middle">1. Độ hụt nền</text>
+                    <line x1="${xL + 25}" y1="${yRim}" x2="${xL + 25}" y2="${hNen}" stroke="#ea580c" stroke-width="1.8" marker-start="url(#arr-up-orange)" marker-end="url(#arr-down-orange)"/>
+                    <text x="${xL + 25}" y="${(yRim + hNen)/2}" font-size="8.5" font-weight="bold" fill="#ea580c" text-anchor="middle">1. Độ hụt nền</text>
                     
-                    <!-- 2. Chiều cao nón -->
-                    <line x1="${xMid + 8}" y1="${hNen}" x2="${xMid + 8}" y2="${hDinh}" stroke="#16a34a" stroke-width="1.8" marker-start="url(#arr-up-green)" marker-end="url(#arr-down-green)"/>
-                    <text x="${xMid + 12}" y="${(hNen + hDinh)/2}" font-size="8.5" font-weight="bold" fill="#16a34a" dominant-baseline="middle">2. Cao nón</text>
+                    <line x1="${xMid + 8}" y1="${hNen}" x2="${xMid + 8}" y2="${hDinh}" stroke="#16a34a" stroke-width="2" marker-start="url(#arr-up-green)" marker-end="url(#arr-down-green)"/>
+                    <text x="${xMid + 14}" y="${(hNen + hDinh)/2}" font-size="9" font-weight="bold" fill="#16a34a" dominant-baseline="middle">2. Cao nón</text>
                 `;
 
             } else if (data.loaiMat === 4) {
@@ -945,13 +945,11 @@
                 }
 
                 thuocDo = `
-                    <!-- 1. Độ hụt nền -->
-                    <line x1="${xL + 25}" y1="${yRim}" x2="${xL + 25}" y2="${hNen}" stroke="#ea580c" stroke-width="1.6" marker-start="url(#arr-up-orange)" marker-end="url(#arr-down-orange)"/>
-                    <text x="${xL + 25}" y="${(yRim + hNen)/2}" font-size="8" font-weight="bold" fill="#ea580c" text-anchor="middle">1. Độ hụt nền</text>
+                    <line x1="${xL + 25}" y1="${yRim}" x2="${xL + 25}" y2="${hNen}" stroke="#ea580c" stroke-width="1.8" marker-start="url(#arr-up-orange)" marker-end="url(#arr-down-orange)"/>
+                    <text x="${xL + 25}" y="${(yRim + hNen)/2}" font-size="8.5" font-weight="bold" fill="#ea580c" text-anchor="middle">1. Độ hụt nền</text>
                     
-                    <!-- 2. Chiều cao vòm -->
-                    <line x1="${xMid + 8}" y1="${hNen}" x2="${xMid + 8}" y2="${hDinh}" stroke="#16a34a" stroke-width="1.8" marker-start="url(#arr-up-green)" marker-end="url(#arr-down-green)"/>
-                    <text x="${xMid + 12}" y="${(hNen + hDinh)/2}" font-size="8.5" font-weight="bold" fill="#16a34a" dominant-baseline="middle">2. Cao đỉnh núm</text>
+                    <line x1="${xMid + 8}" y1="${hNen}" x2="${xMid + 8}" y2="${hDinh}" stroke="#16a34a" stroke-width="2" marker-start="url(#arr-up-green)" marker-end="url(#arr-down-green)"/>
+                    <text x="${xMid + 14}" y="${(hNen + hDinh)/2}" font-size="9" font-weight="bold" fill="#16a34a" dominant-baseline="middle">2. Cao đỉnh núm</text>
                 `;
             }
 
@@ -965,17 +963,17 @@
                     <marker id="arr-down-orange" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto"><path d="M 0 0 L 6 0 L 3 6 z" fill="#ea580c"/></marker>
                     <marker id="arr-up-green" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto"><path d="M 3 0 L 0 6 L 6 6 z" fill="#16a34a"/></marker>
                     <marker id="arr-down-green" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto"><path d="M 0 0 L 6 0 L 3 6 z" fill="#16a34a"/></marker>
-                    <marker id="arr-v" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto"><circle cx="3" cy="3" r="2.5" fill="#16a34a"/></marker>
+                    <marker id="arr-green-dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto"><circle cx="3" cy="3" r="2.5" fill="#16a34a"/></marker>
                 </defs>
 
                 <!-- Đường mốc mép trên thành xà lan -->
-                <line x1="20" y1="${yRim}" x2="380" y2="${yRim}" stroke="#dc2626" stroke-dasharray="4,4" stroke-width="1.4"/>
-                <rect x="90" y="${yRim - 16}" width="220" height="15" rx="3" fill="#fee2e2" stroke="#dc2626" stroke-width="0.8"/>
-                <text x="200" y="${yRim - 5}" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN THÀNH XÀ LAN (0.0m)</text>
+                <line x1="20" y1="${yRim}" x2="420" y2="${yRim}" stroke="#dc2626" stroke-dasharray="4,4" stroke-width="1.4"/>
+                <rect x="110" y="${yRim - 18}" width="220" height="16" rx="3" fill="#fee2e2" stroke="#dc2626" stroke-width="0.8"/>
+                <text x="220" y="${yRim - 6}" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN THÀNH XÀ LAN (0.0m)</text>
 
                 <!-- Vỏ thân xà lan 2 bên -->
-                <line x1="${xL}" y1="${yRim}" x2="${xL}" y2="${yBot}" stroke="#475569" stroke-width="4"/>
-                <line x1="${xR}" y1="${yRim}" x2="${xR}" y2="${yBot}" stroke="#475569" stroke-width="4"/>
+                <line x1="${xL}" y1="${yRim}" x2="${xL}" y2="${yBot}" stroke="#475569" stroke-width="4.5"/>
+                <line x1="${xR}" y1="${yRim}" x2="${xR}" y2="${yBot}" stroke="#475569" stroke-width="4.5"/>
 
                 <!-- Đáy -->
                 ${thietKeDay}
@@ -989,49 +987,49 @@
 
 
             // =========================================================
-            // 7.2 MẶT CHIẾU BẰNG (TOP VIEW) - ĐẦY ĐỦ THƯỚC ĐO KÍCH THƯỚC
+            // 7.2 MẶT CHIẾU BẰNG (TOP VIEW)
             // =========================================================
             const svgTop = document.getElementById('svg-top');
             let innerTop = "";
 
             if (data.loaiMat === 1) {
                 innerTop = `
-                    <text x="200" y="125" font-size="10.5" font-weight="bold" fill="#78350f" text-anchor="middle">CÁT PHẲNG ĐỀU TRONG TOÀN BỘ KHOANG (L × B)</text>
+                    <text x="220" y="125" font-size="10.5" font-weight="bold" fill="#78350f" text-anchor="middle">CÁT PHẲNG ĐỀU TRONG TOÀN BỘ KHOANG (L × B)</text>
                 `;
             } else if (data.loaiMat === 2) {
                 innerTop = `
-                    <line x1="80" y1="120" x2="320" y2="120" stroke="#dc2626" stroke-width="2.5" marker-end="url(#arrow-red)"/>
-                    <text x="200" y="105" font-size="10" font-weight="bold" fill="#dc2626" text-anchor="middle">Hướng dốc từ Đầu ➔ Đuôi</text>
+                    <line x1="90" y1="120" x2="350" y2="120" stroke="#dc2626" stroke-width="2.5" marker-end="url(#arrow-red)"/>
+                    <text x="220" y="105" font-size="10" font-weight="bold" fill="#dc2626" text-anchor="middle">Hướng dốc từ Đầu ➔ Đuôi</text>
                 `;
             } else if (data.loaiMat === 3) {
-                const rx = 65, ry = 35;
+                const rx = 70, ry = 38;
                 innerTop = `
-                    <ellipse cx="200" cy="120" rx="${rx}" ry="${ry}" fill="#d4a047" stroke="#b8860b" stroke-width="1.5"/>
-                    <circle cx="200" cy="120" r="3.5" fill="#dc2626"/>
+                    <ellipse cx="220" cy="120" rx="${rx}" ry="${ry}" fill="#d4a047" stroke="#b8860b" stroke-width="1.5"/>
+                    <circle cx="220" cy="120" r="3.5" fill="#dc2626"/>
                     
                     <!-- Thước đo Dài chân nón (dọc) -->
-                    <line x1="${200 - rx}" y1="120" x2="${200 + rx}" y2="120" stroke="#6b21a8" stroke-width="1.8" marker-start="url(#arr-purple)" marker-end="url(#arr-purple)"/>
-                    <text x="200" y="112" font-size="8.5" font-weight="bold" fill="#6b21a8" text-anchor="middle">3. Dài chân nón (Dọc)</text>
+                    <line x1="${220 - rx}" y1="120" x2="${220 + rx}" y2="120" stroke="#6b21a8" stroke-width="2" marker-start="url(#arr-purple)" marker-end="url(#arr-purple)"/>
+                    <text x="220" y="112" font-size="9" font-weight="bold" fill="#6b21a8" text-anchor="middle">3. Dài chân nón (Dọc)</text>
                     
                     <!-- Thước đo Rộng chân nón (ngang) -->
-                    <line x1="200" y1="${120 - ry}" x2="200" y2="${120 + ry}" stroke="#0284c7" stroke-width="1.8" marker-start="url(#arr-blue)" marker-end="url(#arr-blue)"/>
-                    <text x="${200 + rx + 6}" y="123" font-size="8.5" font-weight="bold" fill="#0284c7" text-anchor="start">4. Rộng chân nón (Ngang)</text>
+                    <line x1="220" y1="${120 - ry}" x2="220" y2="${120 + ry}" stroke="#0284c7" stroke-width="2" marker-start="url(#arr-blue)" marker-end="url(#arr-blue)"/>
+                    <text x="${220 + rx + 8}" y="124" font-size="9" font-weight="bold" fill="#0284c7" text-anchor="start">4. Rộng chân nón (Ngang)</text>
                 `;
             } else if (data.loaiMat === 4) {
-                const rx = 80, ry = 42;
+                const rx = 85, ry = 44;
                 innerTop = `
-                    <ellipse cx="200" cy="120" rx="${rx}" ry="${ry}" fill="#d4a047" fill-opacity="0.3" stroke="#dc2626" stroke-dasharray="3,3" stroke-width="1.2"/>
-                    <ellipse cx="200" cy="120" rx="${rx*0.65}" ry="${ry*0.65}" fill="#d4a047" fill-opacity="0.4" stroke="#dc2626" stroke-dasharray="3,3" stroke-width="1.2"/>
-                    <ellipse cx="200" cy="120" rx="${rx*0.35}" ry="${ry*0.35}" fill="#d4a047" fill-opacity="0.6" stroke="#dc2626" stroke-width="1.2"/>
-                    <circle cx="200" cy="120" r="3.5" fill="#dc2626"/>
+                    <ellipse cx="220" cy="120" rx="${rx}" ry="${ry}" fill="#d4a047" fill-opacity="0.3" stroke="#dc2626" stroke-dasharray="3,3" stroke-width="1.2"/>
+                    <ellipse cx="220" cy="120" rx="${rx*0.65}" ry="${ry*0.65}" fill="#d4a047" fill-opacity="0.4" stroke="#dc2626" stroke-dasharray="3,3" stroke-width="1.2"/>
+                    <ellipse cx="220" cy="120" rx="${rx*0.35}" ry="${ry*0.35}" fill="#d4a047" fill-opacity="0.6" stroke="#dc2626" stroke-width="1.2"/>
+                    <circle cx="220" cy="120" r="3.5" fill="#dc2626"/>
                     
                     <!-- Thước đo Dài chân đụn (dọc) -->
-                    <line x1="${200 - rx}" y1="120" x2="${200 + rx}" y2="120" stroke="#6b21a8" stroke-width="1.8" marker-start="url(#arr-purple)" marker-end="url(#arr-purple)"/>
-                    <text x="200" y="112" font-size="8.5" font-weight="bold" fill="#6b21a8" text-anchor="middle">3. Dài chân đụn (Dọc)</text>
+                    <line x1="${220 - rx}" y1="120" x2="${220 + rx}" y2="120" stroke="#6b21a8" stroke-width="2" marker-start="url(#arr-purple)" marker-end="url(#arr-purple)"/>
+                    <text x="220" y="112" font-size="9" font-weight="bold" fill="#6b21a8" text-anchor="middle">3. Dài chân đụn (Dọc)</text>
                     
                     <!-- Thước đo Rộng chân đụn (ngang) -->
-                    <line x1="200" y1="${120 - ry}" x2="200" y2="${120 + ry}" stroke="#0284c7" stroke-width="1.8" marker-start="url(#arr-blue)" marker-end="url(#arr-blue)"/>
-                    <text x="${200 + rx + 6}" y="123" font-size="8.5" font-weight="bold" fill="#0284c7" text-anchor="start">4. Rộng chân đụn (Ngang)</text>
+                    <line x1="220" y1="${120 - ry}" x2="220" y2="${120 + ry}" stroke="#0284c7" stroke-width="2" marker-start="url(#arr-blue)" marker-end="url(#arr-blue)"/>
+                    <text x="${220 + rx + 8}" y="124" font-size="9" font-weight="bold" fill="#0284c7" text-anchor="start">4. Rộng chân đụn (Ngang)</text>
                 `;
             }
 
@@ -1045,19 +1043,19 @@
                 </defs>
 
                 <!-- Khung xà lan bên ngoài -->
-                <rect x="40" y="55" width="320" height="130" rx="6" fill="#475569"/>
+                <rect x="60" y="55" width="320" height="130" rx="6" fill="#475569"/>
                 
                 <!-- Khoang cát bên trong -->
-                <rect x="50" y="65" width="300" height="110" rx="2" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>
+                <rect x="70" y="65" width="300" height="110" rx="2" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>
 
                 <!-- Nội dung hình vẽ theo từng trường hợp -->
                 ${innerTop}
 
                 <!-- Thước đo kích thước khoang L x B -->
-                <line x1="50" y1="46" x2="350" y2="46" stroke="#2563eb" stroke-width="1.4" marker-start="url(#arr-blue)" marker-end="url(#arr-blue)"/>
-                <text x="200" y="40" font-size="9" font-weight="bold" fill="#2563eb" text-anchor="middle">Chiều dài lòng khoang (L)</text>
+                <line x1="70" y1="46" x2="370" y2="46" stroke="#2563eb" stroke-width="1.5" marker-start="url(#arr-blue)" marker-end="url(#arr-blue)"/>
+                <text x="220" y="38" font-size="9.5" font-weight="bold" fill="#2563eb" text-anchor="middle">Chiều dài lòng khoang (L)</text>
                 
-                <text x="365" y="124" font-size="8.5" font-weight="bold" fill="#2563eb" text-anchor="start">Rộng (B)</text>
+                <text x="385" y="124" font-size="9" font-weight="bold" fill="#2563eb" text-anchor="start">Rộng (B)</text>
             `;
         }
 
