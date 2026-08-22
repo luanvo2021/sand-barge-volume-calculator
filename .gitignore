@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+env/
+venv/
+.vscode/
+.idea/
+demo_tinh_the_tich_cat_xa_lan.py
