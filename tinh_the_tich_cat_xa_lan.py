@@ -102,24 +102,31 @@ class MoHinhTheTichCat:
         sau_mat = self.do_sau_mat_cat(x, y)
         return max(sau_day - sau_mat, 0.0)
 
-    def tinh_the_tich(self, so_bac=120):
-        diem_nut, trong_so = np.polynomial.legendre.leggauss(so_bac)
-
-        x_nut = 0.5 * self.chieu_dai * (diem_nut + 1.0)
-        x_trong_so = 0.5 * self.chieu_dai * trong_so
-
-        y_nut = 0.5 * self.chieu_rong * diem_nut
-        y_trong_so = 0.5 * self.chieu_rong * trong_so
-
+    def tinh_the_tich(self, so_bac=64):
+        pts, wts = np.polynomial.legendre.leggauss(so_bac)
+        
+        # Phân rã 4 góc phần tư để loại trừ hoàn toàn điểm kỳ dị góc nhọn đáy chữ V & mép chân nón
+        x_domains = [(0.0, 0.5 * self.chieu_dai), (0.5 * self.chieu_dai, self.chieu_dai)]
+        y_domains = [(-0.5 * self.chieu_rong, 0.0), (0.0, 0.5 * self.chieu_rong)]
+        
         the_tich = 0.0
-        for i, x in enumerate(x_nut):
-            for j, y in enumerate(y_nut):
-                the_tich += (
-                    x_trong_so[i]
-                    * y_trong_so[j]
-                    * self.chieu_day_cat(float(x), float(y))
-                )
-
+        for x_start, x_end in x_domains:
+            x_mid = 0.5 * (x_start + x_end)
+            x_half = 0.5 * (x_end - x_start)
+            
+            for y_start, y_end in y_domains:
+                y_mid = 0.5 * (y_start + y_end)
+                y_half = 0.5 * (y_end - y_start)
+                
+                for i in range(so_bac):
+                    xi = x_mid + x_half * pts[i]
+                    wi = x_half * wts[i]
+                    
+                    for j in range(so_bac):
+                        yj = y_mid + y_half * pts[j]
+                        wj = y_half * wts[j]
+                        the_tich += wi * wj * self.chieu_day_cat(float(xi), float(yj))
+                        
         return float(the_tich)
 
 
