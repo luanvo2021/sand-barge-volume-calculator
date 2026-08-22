@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tính Thể Tích Cát Xà Lan - Tích Phân 2D & Đồ Họa 3D</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js & OrbitControls for interactive 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f1f5f9; }
+        .canvas-3d-container { width: 100%; height: 320px; position: relative; border-radius: 0.75rem; overflow: hidden; background: #1e293b; }
+        @media (min-width: 1024px) {
+            .canvas-3d-container { height: 380px; }
+        }
+        input:focus, select:focus { outline: none; border-color: #2563eb; ring: 2px; }
+        .badge-step { background: #1e40af; color: white; border-radius: 9999px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; margin-right: 6px; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- HEADER -->
+    <header class="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white shadow-lg py-4 px-4 sm:px-8 border-b border-blue-700/50">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 p-2.5 rounded-xl shadow-md text-slate-950">
+                    <i class="fa-solid fa-ship text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">TÍNH THỂ TÍCH & KHỐI LƯỢNG CÁT XÀ LAN</h1>
+                    <p class="text-xs text-blue-200">Ứng dụng Tích Phân Số 2D (Gauss-Legendre) & Mô Hình Không Gian 3D Trực Quan</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 text-xs bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Hoạt động 100% Trực Tuyến & Không Ngủ Đông</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl mx-auto w-full p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+        <!-- CỘT TRÁI: NHẬP LIỆU (5 CỘT TRÊN MÀN LỚN) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+
+            <!-- 1. KÍCH THƯỚC KHOANG -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-bold text-slate-900 flex items-center mb-3 text-blue-900">
+                    <span class="badge-step">1</span> KÍCH THƯỚC KHOANG CHỨA XÀ LAN
+                </h2>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Chiều dài lòng khoang (m)</label>
+                        <input type="number" id="chieu_dai" step="0.1" value="60.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Chiều rộng lòng khoang (m)</label>
+                        <input type="number" id="chieu_rong" step="0.1" value="12.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Dạng đáy xà lan</label>
+                    <select id="loai_day" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        <option value="Đáy bằng" selected>Đáy bằng (Flat bottom)</option>
+                        <option value="Đáy chữ V">Đáy chữ V (V-bottom)</option>
+                    </select>
+                </div>
+
+                <!-- ĐÁY ĐỘNG -->
+                <div id="khung_day_dong" class="pt-2 border-t border-slate-100">
+                    <!-- Sẽ được điền động bằng JS -->
+                </div>
+            </div>
+
+            <!-- 2. DẠNG BỀ MẶT CÁT -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-bold text-slate-900 flex items-center mb-3 text-blue-900">
+                    <span class="badge-step">2</span> DẠNG PHÂN BỐ BỀ MẶT CÁT
+                </h2>
+                <div class="mb-3">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Chọn kiểu phân bố mặt cát</label>
+                    <select id="loai_mat" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        <option value="1">1 - Mặt phẳng (Dàn trải đều)</option>
+                        <option value="2">2 - Dốc nghiêng trải dài từ Đầu đến Đuôi</option>
+                        <option value="3">3 - Nền phẳng + Đỉnh hình nón (Mặt cắt tam giác)</option>
+                        <option value="4">4 - Nền phẳng + Đỉnh vòm núm cong mượt (Nipple)</option>
+                    </select>
+                </div>
+
+                <!-- MẶT CÁT ĐỘNG -->
+                <div id="khung_mat_dong" class="space-y-2.5 pt-2 border-t border-slate-100">
+                    <!-- Sẽ được điền động bằng JS -->
+                </div>
+            </div>
+
+            <!-- 3. KHỐI LƯỢNG RIÊNG & NÚT TÍNH -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Khối lượng riêng cát (tấn/m³)</label>
+                        <input type="number" id="khoi_luong_rieng" step="0.01" value="1.65" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                    </div>
+                    <div class="text-xs text-slate-500 italic text-right">
+                        Tiêu chuẩn đo đạc cát san lấp: 1.65 tấn/m³
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="btn_tinh" class="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-calculator"></i> TÍNH THỂ TÍCH & KHỐI LƯỢNG
+                    </button>
+                    <button id="btn_reset" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-semibold py-2.5 px-4 rounded-xl transition text-sm">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. KẾT QUẢ BÁO CÁO -->
+            <div class="bg-gradient-to-br from-slate-900 to-blue-950 text-white p-5 rounded-2xl shadow-lg border border-blue-800/40">
+                <h2 class="text-xs uppercase tracking-wider text-blue-300 font-bold mb-3 flex items-center justify-between">
+                    <span><i class="fa-solid fa-square-poll-vertical mr-1.5 text-amber-400"></i> BÁO CÁO KẾT QUẢ TÍNH TOÁN</span>
+                    <span id="calc_time" class="text-[10px] text-slate-400">Tức thì (0.002s)</span>
+                </h2>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                        <div class="text-[11px] text-slate-400 uppercase font-semibold">Tổng Thể Tích (V)</div>
+                        <div id="res_the_tich" class="text-xl sm:text-2xl font-black text-amber-400 mt-1">0.000 <span class="text-xs font-normal text-slate-300">m³</span></div>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                        <div class="text-[11px] text-slate-400 uppercase font-semibold">Tổng Khối Lượng (M)</div>
+                        <div id="res_khoi_luong" class="text-xl sm:text-2xl font-black text-emerald-400 mt-1">0.000 <span class="text-xs font-normal text-slate-300">tấn</span></div>
+                    </div>
+                </div>
+                <div id="res_detail" class="text-[11px] text-slate-300 bg-slate-950/60 p-3 rounded-xl border border-slate-800 font-mono space-y-1">
+                    Đang sẵn sàng...
+                </div>
+            </div>
+
+        </section>
+
+        <!-- CỘT PHẢI: ĐỒ HỌA TRỰC QUAN (3D + 2D) (7 CỘT TRÊN MÀN LỚN) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+
+            <!-- 1. GÓC NHÌN 3D KHÔNG GIAN -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center">
+                        <i class="fa-solid fa-cube mr-1.5 text-blue-600"></i> 1. GÓC NHÌN 3D KHÔNG GIAN (CÁT XUYÊN THẤU - XOAY 360°)
+                    </h2>
+                    <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium">Chạm/Kéo chuột để xoay 3D</span>
+                </div>
+                <div id="container-3d" class="canvas-3d-container flex items-center justify-center">
+                    <!-- Three.js Canvas -->
+                </div>
+            </div>
+
+            <!-- 2. HAI GÓC NHÌN 2D: MẶT CẮT DỌC & MẶT BẰNG -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- 2.1 MẶT CẮT DỌC -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wide mb-2 flex items-center">
+                        <i class="fa-solid fa-arrows-up-down mr-1.5 text-amber-600"></i> 2. MẶT CẮT DỌC (SIDE VIEW)
+                    </h2>
+                    <div class="w-full bg-slate-50 rounded-xl p-2 border border-slate-100 flex items-center justify-center">
+                        <svg id="svg-side" viewBox="0 0 400 240" class="w-full h-auto max-h-[200px]"></svg>
+                    </div>
+                </div>
+
+                <!-- 2.2 MẶT CHIẾU BẰNG -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wide mb-2 flex items-center">
+                        <i class="fa-solid fa-table-cells-large mr-1.5 text-purple-600"></i> 3. MẶT CHIẾU BẰNG (TOP VIEW)
+                    </h2>
+                    <div class="w-full bg-slate-50 rounded-xl p-2 border border-slate-100 flex items-center justify-center">
+                        <svg id="svg-top" viewBox="0 0 400 240" class="w-full h-auto max-h-[200px]"></svg>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 px-4 text-center border-t border-slate-800 mt-6">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>Phần mềm tính toán thể tích cát xà lan &copy; 2026 - Tích hợp Tích phân 2D & Đồ họa 3D WebGL</div>
+            <div class="text-slate-500">Mã nguồn mở lưu trữ trên GitHub Pages</div>
+        </div>
+    </footer>
+
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT: THUẬT TOÁN TÍCH PHÂN 2D & ĐỒ HỌA THREE.JS + SVG -->
+    <!-- ============================================================ -->
+    <script>
+        // ------------------------------------------------------------
+        // 1. TÍNH ĐIỂM NÚT VÀ TRỌNG SỐ GAUSS-LEGENDRE (Order = 64)
+        // ------------------------------------------------------------
+        function computeGaussLegendre(n = 64) {
+            const x = new Float64Array(n);
+            const w = new Float64Array(n);
+            const m = Math.floor((n + 1) / 2);
+            for (let i = 0; i < m; i++) {
+                let z = Math.cos(Math.PI * (i + 0.75) / (n + 0.5));
+                let pp = 0, p1 = 0, p2 = 0, p3 = 0;
+                let z1 = 0;
+                do {
+                    p1 = 1.0;
+                    p2 = 0.0;
+                    for (let j = 0; j < n; j++) {
+                        p3 = p2;
+                        p2 = p1;
+                        p1 = ((2.0 * j + 1.0) * z * p2 - j * p3) / (j + 1.0);
+                    }
+                    pp = n * (z * p1 - p2) / (z * z - 1.0);
+                    z1 = z;
+                    z = z1 - p1 / pp;
+                } while (Math.abs(z - z1) > 1e-15);
+
+                x[i] = -z;
+                x[n - 1 - i] = z;
+                w[i] = 2.0 / ((1.0 - z * z) * pp * pp);
+                w[n - 1 - i] = w[i];
+            }
+            return { x, w };
+        }
+        const gauss64 = computeGaussLegendre(64);
+
+        // ------------------------------------------------------------
+        // 2. MÔ HÌNH TOÁN HỌC TÍCH PHÂN 2D
+        // ------------------------------------------------------------
+        class MoHinhTheTich {
+            constructor(L, B, loaiDay, thongSoDay, loaiMat, thongSoMat) {
+                this.L = L;
+                this.B = B;
+                this.loaiDay = loaiDay;
+                this.thongSoDay = thongSoDay;
+                this.loaiMat = loaiMat;
+                this.thongSoMat = thongSoMat;
+            }
+
+            doSauDay(x, y) {
+                if (this.loaiDay === "Đáy bằng") {
+                    return this.thongSoDay.sau_day;
+                } else {
+                    const sau_man = this.thongSoDay.sau_man;
+                    const canh_V = this.thongSoDay.canh_nghieng_V;
+                    const nua_rong = this.B / 2.0;
+                    const do_ha_sau = Math.sqrt(Math.max(canh_V * canh_V - nua_rong * nua_rong, 0.0));
+                    return sau_man + do_ha_sau * (1.0 - 2.0 * Math.abs(y) / this.B);
+                }
+            }
+
+            doSauMatCat(x, y) {
+                const p = this.thongSoMat;
+                if (this.loaiMat === 1) {
+                    return p.do_hut_cat;
+                } else if (this.loaiMat === 2) {
+                    return p.do_hut_dau + (p.do_hut_duoi - p.do_hut_dau) * (x / this.L);
+                } else if (this.loaiMat === 3) {
+                    const tam_x = this.L / 2.0;
+                    const a = p.dai_chan_non / 2.0;
+                    const b = p.rong_chan_non / 2.0;
+                    const r = Math.sqrt(Math.pow((x - tam_x) / a, 2) + Math.pow(y / b, 2));
+                    const cao = (r <= 1.0) ? p.cao_non * (1.0 - r) : 0.0;
+                    return p.do_hut_nen - cao;
+                } else if (this.loaiMat === 4) {
+                    const tam_x = this.L / 2.0;
+                    const a = p.dai_chan_num / 2.0;
+                    const b = p.rong_chan_num / 2.0;
+                    const r_sq = Math.pow((x - tam_x) / a, 2) + Math.pow(y / b, 2);
+                    const cao = p.cao_num * Math.max(1.0 - r_sq, 0.0);
+                    return p.do_hut_nen - cao;
+                }
+                return 0.0;
+            }
+
+            chieuDayCat(x, y) {
+                const day = this.doSauDay(x, y);
+                const mat = this.doSauMatCat(x, y);
+                return Math.max(day - mat, 0.0);
+            }
+
+            tinhTheTich() {
+                const { x: pts, w: wts } = gauss64;
+                const n = pts.length;
+                let sum = 0.0;
+
+                const xNodes = new Float64Array(n);
+                const xWeights = new Float64Array(n);
+                const yNodes = new Float64Array(n);
+                const yWeights = new Float64Array(n);
+
+                for (let i = 0; i < n; i++) {
+                    xNodes[i] = 0.5 * this.L * (pts[i] + 1.0);
+                    xWeights[i] = 0.5 * this.L * wts[i];
+                    yNodes[i] = 0.5 * this.B * pts[i];
+                    yWeights[i] = 0.5 * this.B * wts[i];
+                }
+
+                for (let i = 0; i < n; i++) {
+                    const xi = xNodes[i];
+                    const wi = xWeights[i];
+                    for (let j = 0; j < n; j++) {
+                        const yj = yNodes[j];
+                        const wj = yWeights[j];
+                        sum += wi * wj * this.chieuDayCat(xi, yj);
+                    }
+                }
+                return sum;
+            }
+        }
+
+        // ------------------------------------------------------------
+        // 3. QUẢN LÝ GIAO DIỆN & Ô NHẬP LIỆU ĐỘNG
+        // ------------------------------------------------------------
+        const elLoaiDay = document.getElementById('loai_day');
+        const elLoaiMat = document.getElementById('loai_mat');
+        const khungDayDong = document.getElementById('khung_day_dong');
+        const khungMatDong = document.getElementById('khung_mat_dong');
+
+        function capNhatKhungDay() {
+            const loai = elLoaiDay.value;
+            if (loai === "Đáy bằng") {
+                khungDayDong.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Chiều sâu khoang xà lan (m)</label>
+                        <input type="number" id="sau_day" step="0.1" value="3.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        <span class="text-[11px] text-slate-500 italic">Đo từ mép trên thành xuống sàn phẳng</span>
+                    </div>
+                `;
+            } else {
+                khungDayDong.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Chiều sâu mạn (m)</label>
+                            <input type="number" id="sau_man" step="0.1" value="2.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Cạnh nghiêng chữ V (m)</label>
+                            <input type="number" id="canh_nghieng_V" step="0.1" value="6.5" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-slate-500 italic mt-1 block">Kéo thước dọc sàn nghiêng từ mạn xuống tim đáy</span>
+                `;
+            }
+            ganSuKienInput();
+        }
+
+        function capNhatKhungMat() {
+            const loai = parseInt(elLoaiMat.value);
+            if (loai === 1) {
+                khungMatDong.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Độ hụt mặt cát từ mép thành (m)</label>
+                        <input type="number" id="do_hut_cat" step="0.1" value="1.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        <span class="text-[11px] text-slate-500 italic">Thả thước từ mép thành xuống cát (nhô cao nhập số âm)</span>
+                    </div>
+                `;
+            } else if (loai === 2) {
+                khungMatDong.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Độ hụt ĐẦU tàu (m)</label>
+                            <input type="number" id="do_hut_dau" step="0.1" value="0.8" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Độ hụt ĐUÔI tàu (m)</label>
+                            <input type="number" id="do_hut_duoi" step="0.1" value="1.8" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-slate-500 italic mt-1 block">Đo độ hụt từ mép thành tại 2 đầu mũi và đuôi lái</span>
+                `;
+            } else if (loai === 3) {
+                khungMatDong.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">1. Độ hụt cát nền (m)</label>
+                            <input type="number" id="do_hut_nen" step="0.1" value="1.5" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">2. Chiều cao nón (m)</label>
+                            <input type="number" id="cao_non" step="0.1" value="0.8" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">3. Dài chân nón dọc (m)</label>
+                            <input type="number" id="dai_chan_non" step="0.1" value="12.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">4. Rộng chân nón ngang (m)</label>
+                            <input type="number" id="rong_chan_non" step="0.1" value="8.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                    </div>
+                `;
+            } else if (loai === 4) {
+                khungMatDong.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">1. Độ hụt cát nền (m)</label>
+                            <input type="number" id="do_hut_nen" step="0.1" value="1.5" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">2. Cao đỉnh vòm núm (m)</label>
+                            <input type="number" id="cao_num" step="0.1" value="0.8" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">3. Dài chân đụn dọc (m)</label>
+                            <input type="number" id="dai_chan_num" step="0.1" value="24.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">4. Rộng chân đụn ngang (m)</label>
+                            <input type="number" id="rong_chan_num" step="0.1" value="8.0" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 bg-slate-50 focus:bg-white transition">
+                        </div>
+                    </div>
+                `;
+            }
+            ganSuKienInput();
+        }
+
+        elLoaiDay.addEventListener('change', () => { capNhatKhungDay(); thucHienTinhToan(); });
+        elLoaiMat.addEventListener('change', () => { capNhatKhungMat(); thucHienTinhToan(); });
+
+        function ganSuKienInput() {
+            document.querySelectorAll('input').forEach(inp => {
+                inp.removeEventListener('input', thucHienTinhToan);
+                inp.addEventListener('input', thucHienTinhToan);
+            });
+        }
+
+        // ------------------------------------------------------------
+        // 4. THỰC HIỆN TÍNH TOÁN & HIỂN THỊ KẾT QUẢ
+        // ------------------------------------------------------------
+        function docDuLieu() {
+            const L = parseFloat(document.getElementById('chieu_dai').value) || 0;
+            const B = parseFloat(document.getElementById('chieu_rong').value) || 0;
+            const rho = parseFloat(document.getElementById('khoi_luong_rieng').value) || 1.65;
+            const loaiDay = elLoaiDay.value;
+
+            let thongSoDay = {};
+            if (loaiDay === "Đáy bằng") {
+                thongSoDay.sau_day = parseFloat(document.getElementById('sau_day')?.value) || 0;
+            } else {
+                thongSoDay.sau_man = parseFloat(document.getElementById('sau_man')?.value) || 0;
+                thongSoDay.canh_nghieng_V = parseFloat(document.getElementById('canh_nghieng_V')?.value) || 0;
+            }
+
+            const loaiMat = parseInt(elLoaiMat.value);
+            let thongSoMat = {};
+            if (loaiMat === 1) {
+                thongSoMat.do_hut_cat = parseFloat(document.getElementById('do_hut_cat')?.value) || 0;
+            } else if (loaiMat === 2) {
+                thongSoMat.do_hut_dau = parseFloat(document.getElementById('do_hut_dau')?.value) || 0;
+                thongSoMat.do_hut_duoi = parseFloat(document.getElementById('do_hut_duoi')?.value) || 0;
+            } else if (loaiMat === 3) {
+                thongSoMat.do_hut_nen = parseFloat(document.getElementById('do_hut_nen')?.value) || 0;
+                thongSoMat.cao_non = parseFloat(document.getElementById('cao_non')?.value) || 0;
+                thongSoMat.dai_chan_non = parseFloat(document.getElementById('dai_chan_non')?.value) || 0;
+                thongSoMat.rong_chan_non = parseFloat(document.getElementById('rong_chan_non')?.value) || 0;
+            } else if (loaiMat === 4) {
+                thongSoMat.do_hut_nen = parseFloat(document.getElementById('do_hut_nen')?.value) || 0;
+                thongSoMat.cao_num = parseFloat(document.getElementById('cao_num')?.value) || 0;
+                thongSoMat.dai_chan_num = parseFloat(document.getElementById('dai_chan_num')?.value) || 0;
+                thongSoMat.rong_chan_num = parseFloat(document.getElementById('rong_chan_num')?.value) || 0;
+            }
+
+            return { L, B, rho, loaiDay, thongSoDay, loaiMat, thongSoMat };
+        }
+
+        function thucHienTinhToan() {
+            try {
+                const data = docDuLieu();
+                if (data.L <= 0 || data.B <= 0) return;
+
+                const t0 = performance.now();
+                const moHinh = new MoHinhTheTich(data.L, data.B, data.loaiDay, data.thongSoDay, data.loaiMat, data.thongSoMat);
+                const theTich = moHinh.tinhTheTich();
+                const khoiLuong = theTich * data.rho;
+                const t1 = performance.now();
+
+                document.getElementById('res_the_tich').innerHTML = `${theTich.toLocaleString('vi-VN', {minimumFractionDigits: 3, maximumFractionDigits: 3})} <span class="text-xs font-normal text-slate-300">m³</span>`;
+                document.getElementById('res_khoi_luong').innerHTML = `${khoiLuong.toLocaleString('vi-VN', {minimumFractionDigits: 3, maximumFractionDigits: 3})} <span class="text-xs font-normal text-slate-300">tấn</span>`;
+                document.getElementById('calc_time').innerText = `Tức thì (${(t1 - t0).toFixed(2)}ms)`;
+
+                let extra = "";
+                if (data.loaiDay === "Đáy chữ V") {
+                    const do_ha = Math.sqrt(Math.max(data.thongSoDay.canh_nghieng_V**2 - (data.B/2)**2, 0));
+                    extra = ` | Đáy V sâu tim = ${(data.thongSoDay.sau_man + do_ha).toFixed(2)}m (đã cộng 100%)`;
+                }
+
+                document.getElementById('res_detail').innerHTML = `
+                    <div>• Kích thước khoang: ${data.L.toFixed(1)}m × ${data.B.toFixed(1)}m | Đáy: ${data.loaiDay}${extra}</div>
+                    <div>• Dạng cát: Option ${data.loaiMat} | Khối lượng riêng: ${data.rho.toFixed(2)} Tấn/m³</div>
+                    <div class="text-emerald-400 font-bold">• Trạng thái: Tính toán hợp lệ qua Tích phân số 2D (Gauss 64×64)</div>
+                `;
+
+                ve3D(data);
+                ve2D(data);
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // 5. ĐỒ HỌA 3D VỚI THREE.JS (CÁT VÀNG NHẠT XUYÊN THẤU)
+        // ------------------------------------------------------------
+        let scene, camera, renderer, controls, sandMesh, hullGroup;
+
+        function initThree() {
+            const container = document.getElementById('container-3d');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(45, 35, 60);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+            // Ánh sáng
+            const ambLight = new THREE.AmbientLight(0xffffff, 0.75);
+            scene.add(ambLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+            dirLight.position.set(30, 50, 40);
+            scene.add(dirLight);
+
+            const dirLight2 = new THREE.DirectionalLight(0x93c5fd, 0.4);
+            dirLight2.position.set(-30, -20, -40);
+            scene.add(dirLight2);
+
+            // Grid nền
+            const grid = new THREE.GridHelper(100, 25, 0x334155, 0x1e293b);
+            grid.position.y = -5;
+            scene.add(grid);
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('container-3d');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function ve3D(data) {
+            if (!scene) return;
+
+            // Xóa mesh cũ
+            if (sandMesh) scene.remove(sandMesh);
+            if (hullGroup) scene.remove(hullGroup);
+
+            hullGroup = new THREE.Group();
+
+            const L_draw = 40.0;
+            const B_draw = 12.0;
+            const H_wall = 6.0;
+
+            // 1. VỎ XÀ LAN
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5, metalness: 0.2, side: THREE.DoubleSide });
+            const bottomMat = new THREE.MeshStandardMaterial({ color: 0x78281f, roughness: 0.6, metalness: 0.1, side: THREE.DoubleSide });
+
+            // Hai vách dọc
+            const sideGeom = new THREE.PlaneGeometry(L_draw, H_wall);
+            const leftWall = new THREE.Mesh(sideGeom, wallMat);
+            leftWall.position.set(0, H_wall/2, -B_draw/2);
+            hullGroup.add(leftWall);
+
+            const rightWall = new THREE.Mesh(sideGeom, wallMat);
+            rightWall.position.set(0, H_wall/2, B_draw/2);
+            rightWall.rotation.y = Math.PI;
+            hullGroup.add(rightWall);
+
+            // Hai vách đầu đuôi
+            const endGeom = new THREE.PlaneGeometry(B_draw, H_wall);
+            const frontWall = new THREE.Mesh(endGeom, wallMat);
+            frontWall.position.set(-L_draw/2, H_wall/2, 0);
+            frontWall.rotation.y = Math.PI/2;
+            hullGroup.add(frontWall);
+
+            const backWall = new THREE.Mesh(endGeom, wallMat);
+            backWall.position.set(L_draw/2, H_wall/2, 0);
+            backWall.rotation.y = -Math.PI/2;
+            hullGroup.add(backWall);
+
+            // Đáy
+            if (data.loaiDay === "Đáy bằng") {
+                const botGeom = new THREE.PlaneGeometry(L_draw, B_draw);
+                const botMesh = new THREE.Mesh(botGeom, bottomMat);
+                botMesh.rotation.x = Math.PI/2;
+                botMesh.position.y = 0;
+                hullGroup.add(botMesh);
+            } else {
+                const Hv = 3.5;
+                const vGeom = new THREE.BufferGeometry();
+                const vertices = new Float32Array([
+                    // Nửa trái
+                    -L_draw/2, 0, -B_draw/2,   L_draw/2, 0, -B_draw/2,   L_draw/2, -Hv, 0,
+                    -L_draw/2, 0, -B_draw/2,   L_draw/2, -Hv, 0,        -L_draw/2, -Hv, 0,
+                    // Nửa phải
+                    -L_draw/2, -Hv, 0,        L_draw/2, -Hv, 0,         L_draw/2, 0, B_draw/2,
+                    -L_draw/2, -Hv, 0,        L_draw/2, 0, B_draw/2,    -L_draw/2, 0, B_draw/2
+                ]);
+                vGeom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                vGeom.computeVertexNormals();
+                const vMesh = new THREE.Mesh(vGeom, bottomMat);
+                hullGroup.add(vMesh);
+            }
+
+            scene.add(hullGroup);
+
+            // 2. BỀ MẶT CÁT VÀNG NHẠT XUYÊN THẤU
+            const segX = 40, segY = 20;
+            const sandGeom = new THREE.PlaneGeometry(L_draw, B_draw, segX, segY);
+            const pos = sandGeom.attributes.position;
+
+            for (let i = 0; i < pos.count; i++) {
+                const xLocal = pos.getX(i);
+                const yLocal = pos.getY(i); // Trục ngang trong plane
+
+                // Quy đổi sang hệ trục mô hình
+                const xNorm = (xLocal + L_draw/2) / L_draw; // 0 -> 1
+                const yNorm = yLocal / (B_draw/2); // -1 -> 1
+
+                let zSand = 0;
+                if (data.loaiMat === 1) {
+                    zSand = 3.5;
+                } else if (data.loaiMat === 2) {
+                    zSand = 4.8 - (4.8 - 1.8) * xNorm;
+                } else if (data.loaiMat === 3) {
+                    const r = Math.sqrt(Math.pow((xLocal)/(L_draw*0.35), 2) + Math.pow((yLocal)/(B_draw*0.45), 2));
+                    zSand = 2.2 + Math.max(0, 3.2 * (1.0 - r));
+                } else if (data.loaiMat === 4) {
+                    const r_sq = Math.pow((xLocal)/(L_draw*0.4), 2) + Math.pow((yLocal)/(B_draw*0.45), 2);
+                    zSand = 2.2 + 3.2 * Math.max(0, 1.0 - r_sq);
+                }
+
+                pos.setZ(i, zSand); // Chiều cao thực tế
+            }
+            sandGeom.computeVertexNormals();
+
+            const sandMat = new THREE.MeshStandardMaterial({
+                color: 0xfef08a, // Vàng nhạt cát
+                roughness: 0.6,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.68,
+                side: THREE.DoubleSide
+            });
+
+            sandMesh = new THREE.Mesh(sandGeom, sandMat);
+            sandMesh.rotation.x = -Math.PI/2;
+            scene.add(sandMesh);
+        }
+
+        // ------------------------------------------------------------
+        // 6. ĐỒ HỌA 2D (MẶT CẮT DỌC & MẶT BẰNG SVG)
+        // ------------------------------------------------------------
+        function ve2D(data) {
+            // 2.1 MẶT CẮT DỌC (svg-side)
+            const svgSide = document.getElementById('svg-side');
+            let pathCat = "";
+            let thietKeDay = "";
+
+            if (data.loaiDay === "Đáy bằng") {
+                thietKeDay = `<line x1="50" y1="180" x2="350" y2="180" stroke="#78281f" stroke-width="4"/>`;
+            } else {
+                thietKeDay = `
+                    <polygon points="50,180 200,215 350,180" fill="#e5b869" stroke="#78281f" stroke-width="3"/>
+                    <line x1="50" y1="180" x2="350" y2="180" stroke="#b8860b" stroke-dasharray="3,3" stroke-width="1"/>
+                `;
+            }
+
+            if (data.loaiMat === 1) {
+                pathCat = `<polygon points="50,180 50,110 350,110 350,180" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>`;
+            } else if (data.loaiMat === 2) {
+                pathCat = `<polygon points="50,180 50,85 350,145 350,180" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>`;
+            } else if (data.loaiMat === 3) {
+                pathCat = `
+                    <polygon points="50,180 50,135 350,135 350,180" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>
+                    <polygon points="120,135 200,70 280,135" fill="#d4a047" stroke="#b8860b" stroke-width="1.5"/>
+                `;
+            } else if (data.loaiMat === 4) {
+                pathCat = `
+                    <polygon points="50,180 50,135 350,135 350,180" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>
+                    <path d="M 100,135 Q 200,60 300,135 Z" fill="#d4a047" stroke="#b8860b" stroke-width="1.5"/>
+                `;
+            }
+
+            svgSide.innerHTML = `
+                <!-- Đường mốc mép trên -->
+                <line x1="30" y1="40" x2="370" y2="40" stroke="#dc2626" stroke-dasharray="4,4" stroke-width="1.5"/>
+                <text x="200" y="32" font-size="10" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN THÀNH XÀ LAN (0.0m)</text>
+                <!-- Thân xà lan -->
+                <line x1="50" y1="40" x2="50" y2="180" stroke="#475569" stroke-width="4"/>
+                <line x1="350" y1="40" x2="350" y2="180" stroke="#475569" stroke-width="4"/>
+                <!-- Đáy -->
+                ${thietKeDay}
+                <!-- Khối cát -->
+                ${pathCat}
+                <!-- Thước đo minh họa -->
+                <line x1="65" y1="40" x2="65" y2="180" stroke="#0284c7" stroke-width="1.5"/>
+                <text x="70" y="115" font-size="9" font-weight="bold" fill="#0284c7">Chiều sâu khoang</text>
+            `;
+
+            // 2.2 MẶT CHIẾU BẰNG (svg-top)
+            const svgTop = document.getElementById('svg-top');
+            let innerTop = "";
+
+            if (data.loaiMat === 1) {
+                innerTop = `<text x="200" y="125" font-size="11" font-weight="bold" fill="#78350f" text-anchor="middle">CÁT PHẲNG ĐỀU TRONG KHOANG</text>`;
+            } else if (data.loaiMat === 2) {
+                innerTop = `
+                    <line x1="70" y1="120" x2="330" y2="120" stroke="#dc2626" stroke-width="2" marker-end="url(#arrow)"/>
+                    <text x="200" y="105" font-size="10" font-weight="bold" fill="#dc2626" text-anchor="middle">Hướng dốc từ Đầu ➔ Đuôi</text>
+                `;
+            } else if (data.loaiMat === 3) {
+                innerTop = `
+                    <ellipse cx="200" cy="120" rx="70" ry="38" fill="#d4a047" stroke="#b8860b" stroke-width="1.5"/>
+                    <circle cx="200" cy="120" r="3" fill="#dc2626"/>
+                    <text x="200" y="115" font-size="9" font-weight="bold" fill="#581c87" text-anchor="middle">Chân đống nón (Dọc × Ngang)</text>
+                `;
+            } else if (data.loaiMat === 4) {
+                innerTop = `
+                    <ellipse cx="200" cy="120" rx="85" ry="42" fill="none" stroke="#dc2626" stroke-dasharray="3,3" stroke-width="1"/>
+                    <ellipse cx="200" cy="120" rx="55" ry="28" fill="none" stroke="#dc2626" stroke-dasharray="3,3" stroke-width="1"/>
+                    <ellipse cx="200" cy="120" rx="25" ry="14" fill="none" stroke="#dc2626" stroke-dasharray="3,3" stroke-width="1"/>
+                    <circle cx="200" cy="120" r="3" fill="#dc2626"/>
+                    <text x="200" y="115" font-size="9" font-weight="bold" fill="#581c87" text-anchor="middle">Đường đồng mức đụn cát Nipple</text>
+                `;
+            }
+
+            svgTop.innerHTML = `
+                <defs>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626" />
+                    </marker>
+                </defs>
+                <!-- Khung xà lan -->
+                <rect x="40" y="55" width="320" height="130" rx="6" fill="#475569"/>
+                <!-- Khoang cát -->
+                <rect x="50" y="65" width="300" height="110" rx="2" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>
+                ${innerTop}
+                <!-- Kích thước L x B -->
+                <text x="200" y="48" font-size="9" font-weight="bold" fill="#2563eb" text-anchor="middle">Chiều dài khoang L (Dọc xà lan)</text>
+                <text x="365" y="123" font-size="9" font-weight="bold" fill="#2563eb" text-anchor="start">Rộng B</text>
+            `;
+        }
+
+        // ------------------------------------------------------------
+        // 7. KHỞI TẠO ỨNG DỤNG
+        // ------------------------------------------------------------
+        window.addEventListener('DOMContentLoaded', () => {
+            initThree();
+            capNhatKhungDay();
+            capNhatKhungMat();
+            thucHienTinhToan();
+
+            document.getElementById('btn_tinh').addEventListener('click', thucHienTinhToan);
+            document.getElementById('btn_reset').addEventListener('click', () => {
+                document.getElementById('chieu_dai').value = 60.0;
+                document.getElementById('chieu_rong').value = 12.0;
+                document.getElementById('khoi_luong_rieng').value = 1.65;
+                elLoaiDay.value = "Đáy bằng";
+                elLoaiMat.value = "1";
+                capNhatKhungDay();
+                capNhatKhungMat();
+                thucHienTinhToan();
+            });
+        });
+    </script>
+</body>
+</html>
