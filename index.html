@@ -632,13 +632,14 @@
             renderCADTransverse(layers, zRanges, zTotal, mType, mParams);
         }
 
-        function renderCADTransverse(layers, zRanges, zTotal, mType, mParams) {
+                function renderCADTransverse(layers, zRanges, zTotal, mType, mParams) {
             const svg = document.getElementById('svg-transverse');
             const svgLong = document.getElementById('svg-long');
+            if (!svg || !svgLong) return;
 
-            const cX = 210;
+            const cX = 200;
             const baseY = 240;
-            const scale = 25.0;
+            const scale = 24.0;
             const scaleX = scale;
             const scaleY = scale;
 
@@ -647,6 +648,14 @@
             let textAnnotations = "";
             let prev_top_half = 0.0;
 
+            // Find max half width for layout
+            let max_half_px = 0;
+            for (let lay of layers) {
+                if (lay.B) max_half_px = Math.max(max_half_px, (lay.B / 2) * scaleX);
+                if (lay.B_top) max_half_px = Math.max(max_half_px, (lay.B_top / 2) * scaleX);
+                if (lay.B_bot) max_half_px = Math.max(max_half_px, (lay.B_bot / 2) * scaleX);
+            }
+
             function makeDimH(x1, x2, y, text, offset_y, color="#38bdf8") {
                 const y_dim = y + offset_y;
                 return `
@@ -654,7 +663,7 @@
                         <line x1="${x1}" y1="${y}" x2="${x1}" y2="${y_dim + (offset_y>=0?4:-4)}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
                         <line x1="${x2}" y1="${y}" x2="${x2}" y2="${y_dim + (offset_y>=0?4:-4)}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
                         <line x1="${x1}" y1="${y_dim}" x2="${x2}" y2="${y_dim}" stroke="${color}" stroke-width="1.1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-                        <rect x="${(x1+x2)/2 - 28}" y="${y_dim - (offset_y>=0?-3:12)}" width="56" height="11" fill="#0f172a" fill-opacity="0.85" rx="2"/>
+                        <rect x="${(x1+x2)/2 - 28}" y="${y_dim - (offset_y>=0?-3:12)}" width="56" height="11" fill="#0f172a" fill-opacity="0.9" rx="2"/>
                         <text x="${(x1+x2)/2}" y="${y_dim - (offset_y>=0?-11:3)}" font-size="8" font-weight="bold" fill="${color}" text-anchor="middle">${text}</text>
                     </g>
                 `;
@@ -662,13 +671,15 @@
 
             function makeDimV(y1, y2, x, text, offset_x, color="#38bdf8") {
                 const x_dim = x + offset_x;
+                const yMin = Math.min(y1, y2);
+                const yMax = Math.max(y1, y2);
                 return `
                     <g class="dim-group">
                         <line x1="${x}" y1="${y1}" x2="${x_dim + (offset_x>=0?4:-4)}" y2="${y1}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
                         <line x1="${x}" y1="${y2}" x2="${x_dim + (offset_x>=0?4:-4)}" y2="${y2}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
-                        <line x1="${x_dim}" y1="${y1}" x2="${x_dim}" y2="${y2}" stroke="${color}" stroke-width="1.1"/>
-                        <rect x="${x_dim + (offset_x>=0?3:-48)}" y="${(y1+y2)/2 - 6}" width="45" height="12" fill="#0f172a" fill-opacity="0.85" rx="2"/>
-                        <text x="${x_dim + (offset_x>=0?25:-25)}" y="${(y1+y2)/2 + 3}" font-size="8" font-weight="bold" fill="${color}" text-anchor="middle">${text}</text>
+                        <line x1="${x_dim}" y1="${yMin}" x2="${x_dim}" y2="${yMax}" stroke="${color}" stroke-width="1.1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+                        <rect x="${x_dim + (offset_x>=0?4:-48)}" y="${(y1+y2)/2 - 6}" width="45" height="12" fill="#0f172a" fill-opacity="0.9" rx="2"/>
+                        <text x="${x_dim + (offset_x>=0?26:-26)}" y="${(y1+y2)/2 + 3}" font-size="8" font-weight="bold" fill="${color}" text-anchor="middle">${text}</text>
                     </g>
                 `;
             }
@@ -692,7 +703,7 @@
                     <g class="dim-group">
                         <line x1="${x1}" y1="${y1}" x2="${p1x + 4 * nx}" y2="${p1y + 4 * ny}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
                         <line x1="${x2}" y1="${y2}" x2="${p2x + 4 * nx}" y2="${p2y + 4 * ny}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
-                        <line x1="${p1x}" y1="${p1y}" x2="${p2x}" y2="${p2y}" stroke="${color}" stroke-width="1.2"/>
+                        <line x1="${p1x}" y1="${p1y}" x2="${p2x}" y2="${p2y}" stroke="${color}" stroke-width="1.2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
                         <text x="${mx}" y="${my}" font-size="9" font-weight="bold" fill="${color}" text-anchor="middle" transform="rotate(${angle}, ${mx}, ${my})">${text}</text>
                     </g>
                 `;
@@ -731,15 +742,11 @@
                         prev_top_half = halfTop;
                         pathDims += makeDimH(cX - halfBot, cX + halfBot, yBot, `B1_bot`, 16);
                     }
-                    pathDims += makeDimV(yTop, yBot, cX - prev_top_half, `H1`, -20);
-                    if (layers.length > 1) {
-                        pathHull += `
-                            <line x1="${cX - prev_top_half}" y1="${yTop}" x2="${cX + prev_top_half}" y2="${yTop}" stroke="#3b82f6" stroke-width="2.0"/>
-                        `;
-                    }
+                    pathDims += makeDimV(yTop, yBot, cX - max_half_px, `H1`, -20);
                 } else {
                     if (lay.type === "Hình hộp chữ nhật") {
                         const halfB = (lay.B / 2) * scaleX;
+                        // Sàn be ngang
                         if (Math.abs(halfB - prev_top_half) > 1) {
                             pathHull += `
                                 <line x1="${cX - prev_top_half}" y1="${yBot}" x2="${cX - halfB}" y2="${yBot}" stroke="#ffffff" stroke-width="2.4"/>
@@ -751,7 +758,11 @@
                             <line x1="${cX + halfB}" y1="${yBot}" x2="${cX + halfB}" y2="${yTop}" stroke="#ffffff" stroke-width="2.8"/>
                         `;
                         prev_top_half = halfB;
-                        pathDims += makeDimH(cX - halfB, cX + halfB, yBot, `B${k+1}`, 0);
+                        if (k === layers.length - 1) {
+                            pathDims += makeDimH(cX - halfB, cX + halfB, yTop, `B${k+1}`, -10);
+                        } else {
+                            pathDims += makeDimH(cX - halfB, cX + halfB, yTop, `B${k+1}`, 0);
+                        }
                     } else if (lay.type === "Hình hộp thang") {
                         const halfTop = (lay.B_top / 2) * scaleX;
                         const halfBot = (lay.B_bot / 2) * scaleX;
@@ -766,43 +777,50 @@
                             <line x1="${cX + halfBot}" y1="${yBot}" x2="${cX + halfTop}" y2="${yTop}" stroke="#ffffff" stroke-width="2.8"/>
                         `;
                         prev_top_half = halfTop;
-                        pathDims += makeDimH(cX - halfBot, cX + halfBot, yBot, `B${k+1}_bot`, 0);
+                        if (k === layers.length - 1) {
+                            pathDims += makeDimH(cX - halfTop, cX + halfTop, yTop, `B${k+1}_top`, -10);
+                        } else {
+                            pathDims += makeDimH(cX - halfTop, cX + halfTop, yTop, `B${k+1}_top`, 0);
+                        }
                     }
 
-                    pathDims += makeDimV(yTop, yBot, cX - prev_top_half, `H${k+1}`, -20);
-
-                    if (k < layers.length - 1) {
-                        pathHull += `
-                            <line x1="${cX - prev_top_half}" y1="${yTop}" x2="${cX + prev_top_half}" y2="${yTop}" stroke="#3b82f6" stroke-width="2.0"/>
-                        `;
-                    }
+                    pathDims += makeDimV(yTop, yBot, cX - max_half_px, `H${k+1}`, -20);
                 }
 
+                // Đường phân tầng màu xanh
+                if (k > 0) {
+                    pathHull += `
+                        <line x1="${cX - prev_top_half}" y1="${yBot}" x2="${cX + prev_top_half}" y2="${yBot}" stroke="#3b82f6" stroke-width="1.8"/>
+                    `;
+                }
+
+                // Ghi chú Phần 1, Phần 2, Phần 3 đặt ở cột xa bên phải (x = cX + max_half_px + 65)
+                const rightAnnotX = cX + max_half_px + 70;
                 textAnnotations += `
-                    <line x1="${cX + prev_top_half + 4}" y1="${(yBot + yTop)/2}" x2="${cX + 140}" y2="${(yBot + yTop)/2}" stroke="#38bdf8" stroke-dasharray="2,2" stroke-width="1.0"/>
-                    <text x="${cX + 145}" y="${(yBot + yTop)/2}" font-size="9" font-weight="bold" fill="#38bdf8" dominant-baseline="middle">${lay.name}</text>
+                    <line x1="${cX + prev_top_half + 4}" y1="${(yBot + yTop)/2}" x2="${rightAnnotX - 6}" y2="${(yBot + yTop)/2}" stroke="#38bdf8" stroke-dasharray="2,2" stroke-width="1.0"/>
+                    <text x="${rightAnnotX}" y="${(yBot + yTop)/2}" font-size="9" font-weight="bold" fill="#38bdf8" dominant-baseline="middle">${lay.name}</text>
                 `;
             }
 
-            // Nóc trên cùng
+            // Nóc trên cùng (0.0m)
             const yTopRim = baseY - zTotal * scaleY;
             pathHull += `
                 <line x1="${cX - prev_top_half}" y1="${yTopRim}" x2="${cX + prev_top_half}" y2="${yTopRim}" stroke="#ffffff" stroke-width="2.8"/>
                 <line x1="20" y1="${yTopRim}" x2="440" y2="${yTopRim}" stroke="#ef4444" stroke-dasharray="4,4" stroke-width="1.4"/>
-                <text x="${cX}" y="${yTopRim - 16}" font-size="8.5" font-weight="bold" fill="#ef4444" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
+                <text x="${cX}" y="${yTopRim - 24}" font-size="8.5" font-weight="bold" fill="#ef4444" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
             `;
-            const lastLay = layers[layers.length - 1];
-            if (lastLay.B_top) pathDims += makeDimH(cX - prev_top_half, cX + prev_top_half, yTopRim, `B${layers.length}_top`, -10);
-            else if (lastLay.B) pathDims += makeDimH(cX - prev_top_half, cX + prev_top_half, yTopRim, `B${layers.length}`, -10);
 
+            // MẶT CÁT & ĐỘ HỤT (D)
             const D_mat = mParams.do_hut_cat || mParams.do_hut_nen || 0.8;
             const ySand = Math.min(yTopRim + D_mat * scaleY, baseY);
-            pathHull += `
-                <line x1="${cX - prev_top_half * 0.95}" y1="${ySand}" x2="${cX + prev_top_half * 0.95}" y2="${ySand}" stroke="#facc15" stroke-width="2.2"/>
-                <rect x="${cX - 45}" y="${ySand + 4}" width="90" height="15" rx="3" fill="#ca8a04" fill-opacity="0.85"/>
-                <text x="${cX}" y="${ySand + 14}" font-size="8.5" font-weight="bold" fill="#ffffff" text-anchor="middle">MẶT CÁT</text>
-            `;
-            pathDims += makeDimV(yTopRim, ySand, cX + prev_top_half, `Độ hụt (D)`, 18, '#facc15');
+            if (D_mat < zTotal) {
+                pathHull += `
+                    <line x1="${cX - prev_top_half * 0.95}" y1="${ySand}" x2="${cX + prev_top_half * 0.95}" y2="${ySand}" stroke="#facc15" stroke-width="2.2"/>
+                    <rect x="${cX - 38}" y="${ySand + 4}" width="76" height="14" rx="3" fill="#ca8a04" fill-opacity="0.9"/>
+                    <text x="${cX}" y="${ySand + 14}" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">MẶT CÁT</text>
+                `;
+                pathDims += makeDimV(yTopRim, ySand, cX + max_half_px, `Độ hụt (D)`, 20, '#facc15');
+            }
 
             svg.innerHTML = `
                 <defs>
