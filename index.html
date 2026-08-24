@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tính Thể Tích Cát Xà Lan V2 - Chuẩn Tỷ Lệ AutoCAD & 3D</title>
+    <title>Tính Thể Tích Cát Xà Lan V2 - Di Động & AutoCAD</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome 6 CDN -->
@@ -11,6 +11,15 @@
     <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
+        /* Chống zoom giật trên iOS Safari khi focus input */
+        input, select {
+            font-size: 16px !important;
+        }
+        @media (min-width: 640px) {
+            input, select {
+                font-size: 13px !important;
+            }
+        }
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
@@ -26,56 +35,93 @@
         #threejs-canvas:active {
             cursor: grabbing;
         }
-        .tab-btn.active {
+        /* Mobile Top Tabs Styling */
+        .mobile-tab-btn.active {
             background-color: #2563eb;
             color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgb(37 99 235 / 0.2);
+            font-weight: bold;
+            box-shadow: 0 4px 10px -2px rgba(37, 99, 235, 0.4);
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between pb-20 lg:pb-6">
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between pb-24 lg:pb-6">
 
-    <!-- HEADER -->
-    <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md text-white shadow-md py-3 px-3 sm:px-6 border-b border-slate-800">
+    <!-- HEADER DI ĐỘNG & DESKTOP -->
+    <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md text-white shadow-md py-2.5 px-3 sm:px-6 border-b border-slate-800">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-2.5">
-                <div class="bg-amber-500 text-slate-950 p-2 rounded-xl shadow-md">
-                    <i class="fa-solid fa-layer-group text-lg sm:text-xl"></i>
+                <div class="bg-amber-500 text-slate-950 p-1.5 sm:p-2 rounded-xl shadow-md flex items-center justify-center">
+                    <i class="fa-solid fa-ship text-base sm:text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-sm sm:text-base font-black tracking-tight leading-tight">TÍNH CÁT XÀ LAN V2</h1>
-                    <p class="text-[10px] sm:text-xs text-blue-300">Chuẩn Tỷ Lệ Hình Học AutoCAD • 3D Trực Quan Phóng To Rõ Ràng</p>
+                    <h1 class="text-sm sm:text-base font-black tracking-tight leading-tight flex items-center gap-1.5">
+                        TÍNH CÁT XÀ LAN V2
+                        <span class="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.2 rounded-full hidden sm:inline">PRO</span>
+                    </h1>
+                    <p class="text-[10px] sm:text-xs text-blue-300">Đa Tầng AutoCAD • 3D Xoay 360° • Chuẩn Nghiệm Thu</p>
                 </div>
             </div>
-            <button id="btn_copy_zalo" onclick="saoChepKetQua()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow transition flex items-center gap-1.5">
-                <i class="fa-solid fa-copy"></i>
-                <span class="hidden sm:inline">Sao chép gửi Zalo</span>
-                <span class="sm:hidden">Sao chép</span>
+            <button onclick="saoChepKetQua()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-md transition flex items-center gap-1.5">
+                <i class="fa-solid fa-share-nodes text-sm"></i>
+                <span class="font-bold">Gửi Zalo</span>
             </button>
         </div>
     </header>
 
+    <!-- THANH CHUYỂN TAB TRÊN DI ĐỘNG (DỄ BẤM BẰNG 1 TAY) -->
+    <div class="lg:hidden sticky top-[57px] z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-3 py-2 shadow-sm">
+        <div class="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl">
+            <button id="m_btn_form" onclick="switchMobileTab('form')" class="mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700">
+                <i class="fa-solid fa-pen-to-square"></i> 1. Nhập Số
+            </button>
+            <button id="m_btn_2d" onclick="switchMobileTab('2d')" class="mobile-tab-btn py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700">
+                <i class="fa-solid fa-shapes"></i> 2. Bản Vẽ 2D
+            </button>
+            <button id="m_btn_3d" onclick="switchMobileTab('3d')" class="mobile-tab-btn py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700">
+                <i class="fa-solid fa-cube text-amber-500"></i> 3. Khối 3D
+            </button>
+        </div>
+    </div>
+
     <!-- MAIN CONTAINER -->
-    <main class="max-w-7xl mx-auto w-full p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
+    <main class="max-w-7xl mx-auto w-full p-2.5 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
         
         <!-- CỘT TRÁI: FORM NHẬP LIỆU -->
-        <section class="lg:col-span-5 flex flex-col gap-3">
+        <section id="col_form" class="lg:col-span-5 flex flex-col gap-3">
             
-            <!-- THẺ TÓM TẮT KẾT QUẢ -->
-            <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl shadow-md border border-slate-700">
-                <div class="grid grid-cols-2 gap-3 divide-x divide-slate-700/80">
+            <!-- THẺ TÓM TẮT KẾT QUẢ TRÊN ĐẦU FORM -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 rounded-2xl shadow-lg border border-slate-700">
+                <div class="grid grid-cols-2 gap-3 divide-x divide-slate-700">
                     <div class="px-1">
-                        <div class="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1">
+                        <div class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold flex items-center gap-1">
                             <i class="fa-solid fa-cube text-amber-400"></i> Thể Tích Cát
                         </div>
-                        <div id="res_the_tich" class="text-xl sm:text-2xl font-black text-amber-400 mt-0.5">0.000 <span class="text-xs font-normal text-slate-300">m³</span></div>
+                        <div id="res_the_tich" class="text-xl sm:text-2xl font-black text-amber-400 mt-1">0.000 <span class="text-xs font-normal text-slate-300">m³</span></div>
                     </div>
-                    <div class="pl-3">
-                        <div class="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1">
+                    <div class="pl-3 sm:pl-4">
+                        <div class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold flex items-center gap-1">
                             <i class="fa-solid fa-weight-hanging text-emerald-400"></i> Khối Lượng
                         </div>
-                        <div id="res_khoi_luong" class="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5">0.000 <span class="text-xs font-normal text-slate-300">tấn</span></div>
+                        <div id="res_khoi_luong" class="text-xl sm:text-2xl font-black text-emerald-400 mt-1">0.000 <span class="text-xs font-normal text-slate-300">tấn</span></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- CHỌN MẪU XÀ LAN NHANH (1 CHẠM TRÊN DI ĐỘNG) -->
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+                <span class="text-[11px] font-bold text-slate-600 uppercase block mb-1.5 flex items-center gap-1">
+                    <i class="fa-solid fa-bolt text-amber-500"></i> Chọn Mẫu Xà Lan Nhanh:
+                </span>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button onclick="applyPreset(1)" class="py-1.5 px-2 text-[11px] font-bold bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200 rounded-xl transition text-center">
+                        2 Tầng Đáy Thang
+                    </button>
+                    <button onclick="applyPreset(2)" class="py-1.5 px-2 text-[11px] font-bold bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200 rounded-xl transition text-center">
+                        3 Tầng Đáy V + Cổ
+                    </button>
+                    <button onclick="applyPreset(3)" class="py-1.5 px-2 text-[11px] font-bold bg-slate-50 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200 rounded-xl transition text-center">
+                        1 Tầng Đáy Bằng
+                    </button>
                 </div>
             </div>
 
@@ -83,14 +129,14 @@
             <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                        <span class="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px]">1</span>
-                        Phần 1: Đáy Sàn
+                        <span class="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">1</span>
+                        Phần 1: Đáy Sàn Xà Lan
                     </h3>
                 </div>
                 <div class="space-y-2">
                     <div>
-                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Dạng đáy sàn:</label>
-                        <select id="sel_p1" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Dạng kết cấu đáy:</label>
+                        <select id="sel_p1" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
                             <option value="Đáy hộp hình thang" selected>Đáy hộp hình thang (Vát 2 bên)</option>
                             <option value="Đáy bằng">Đáy bằng (Sàn phẳng ngang)</option>
                             <option value="Đáy chữ V">Đáy chữ V (Đáy chéo tam giác)</option>
@@ -104,14 +150,14 @@
             <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                        <span class="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px]">2</span>
+                        <span class="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">2</span>
                         Phần 2: Thân Chính (Tầng 2)
                     </h3>
                 </div>
                 <div class="space-y-2">
                     <div>
                         <label class="text-[11px] font-semibold text-slate-600 block mb-1">Dạng thân chính:</label>
-                        <select id="sel_p2" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                        <select id="sel_p2" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
                             <option value="Hình hộp thang" selected>Hình hộp thang (Vát mạn mở rộng)</option>
                             <option value="Hình hộp chữ nhật">Hình hộp chữ nhật (Thẳng đứng)</option>
                         </select>
@@ -124,16 +170,16 @@
             <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                        <span class="w-4 h-4 bg-slate-600 text-white rounded-full flex items-center justify-center text-[10px]">3</span>
+                        <span class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">3</span>
                         Phần 3: Tầng Phụ 1 (Cổ khoang / Thành be)
                     </h3>
                 </div>
                 <div class="space-y-2">
                     <div>
                         <label class="text-[11px] font-semibold text-slate-600 block mb-1">Chọn tầng phụ 1:</label>
-                        <select id="sel_p3" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                        <select id="sel_p3" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
                             <option value="Không có phần 3" selected>Không có phần 3 (Tắt)</option>
-                            <option value="Hình hộp chữ nhật">Hình hộp chữ nhật (Thụt vào trong)</option>
+                            <option value="Hình hộp chữ nhật">Hình hộp chữ nhật (Thẳng đứng 90°)</option>
                             <option value="Hình hộp thang">Hình hộp thang</option>
                         </select>
                     </div>
@@ -145,14 +191,14 @@
             <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                        <span class="w-4 h-4 bg-slate-600 text-white rounded-full flex items-center justify-center text-[10px]">4</span>
+                        <span class="w-5 h-5 bg-purple-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">4</span>
                         Phần 4: Tầng Phụ 2 (Nằm trên Phần 3)
                     </h3>
                 </div>
                 <div class="space-y-2">
                     <div>
                         <label class="text-[11px] font-semibold text-slate-600 block mb-1">Chọn tầng phụ 2:</label>
-                        <select id="sel_p4" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                        <select id="sel_p4" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
                             <option value="Không có phần 4" selected>Không có phần 4 (Tắt)</option>
                             <option value="Hình hộp chữ nhật">Hình hộp chữ nhật</option>
                             <option value="Hình hộp thang">Hình hộp thang</option>
@@ -172,11 +218,11 @@
                 </div>
                 <div class="space-y-2">
                     <div>
-                        <select id="sel_mat" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                        <select id="sel_mat" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
                             <option value="1" selected>1 - Mặt phẳng (Dàn trải đều)</option>
                             <option value="2">2 - Dốc nghiêng trải dài từ Đầu đến Đuôi</option>
                             <option value="3">3 - Nền phẳng + Đỉnh hình nón (Chóp tam giác)</option>
-                            <option value="4">4 - Nền phẳng + Đỉnh vòm núm cong mượt (Nipple)</option>
+                            <option value="4">4 - Nền phẳng + Đỉnh vòm núm cong mượt (Paraboloid)</option>
                         </select>
                     </div>
                     <div id="fields_mat" class="grid grid-cols-2 gap-2 pt-1"></div>
@@ -184,46 +230,55 @@
             </div>
 
             <!-- NHÓM 6: KHỐI LƯỢNG RIÊNG -->
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-700">Khối lượng riêng cát (tấn/m³):</span>
-                <input id="inp_rho" type="number" step="0.01" value="1.65" oninput="tinhToan()" class="w-24 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1 text-xs font-bold text-center text-slate-800 focus:ring-2 focus:ring-blue-500">
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-slate-700 block">Khối lượng riêng cát:</span>
+                    <span class="text-[10px] text-slate-400">Tiêu chuẩn: 1.60 ~ 1.70</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <input id="inp_rho" type="number" inputmode="decimal" step="0.01" value="1.65" oninput="tinhToan()" class="w-24 bg-slate-50 border border-slate-300 rounded-xl px-2 py-1.5 text-xs font-black text-center text-slate-800 focus:ring-2 focus:ring-blue-500">
+                    <span class="text-xs font-bold text-slate-500">tấn/m³</span>
+                </div>
             </div>
 
         </section>
 
-        <!-- CỘT PHẢI: ĐỒ HỌA TRỰC QUAN & 2 TAB CHUYÊN BIỆT -->
-        <section class="lg:col-span-7 flex flex-col gap-3">
+        <!-- CỘT PHẢI: ĐỒ HỌA TRỰC QUAN 2D & 3D -->
+        <section id="col_graphics" class="lg:col-span-7 flex flex-col gap-3">
 
-            <!-- TAB SWITCHER BUTTONS (2 TABS DUY NHẤT) -->
-            <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between gap-2">
+            <!-- DESKTOP 2-TAB SWITCHER BUTTONS (CHỈ HIỆN TRÊN MÀN HÌNH LỚN) -->
+            <div class="hidden lg:flex bg-white p-2 rounded-2xl shadow-sm border border-slate-200 items-center justify-between gap-2">
                 <div class="flex items-center gap-2 w-full">
-                    <button id="btn_tab_2d" onclick="switchGraphicTab('2d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2">
+                    <button id="d_btn_tab_2d" onclick="switchDesktopGraphicTab('2d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-shapes"></i> 📐 1. Bản Vẽ 2D Khổ Lớn (Zoom & Pan)
                     </button>
-                    <button id="btn_tab_3d" onclick="switchGraphicTab('3d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2">
+                    <button id="d_btn_tab_3d" onclick="switchDesktopGraphicTab('3d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-cube text-amber-500"></i> 🌐 2. Mô Hình 3D Toàn Khung (Xoay 360°)
                     </button>
                 </div>
             </div>
 
             <!-- PANEL 1: 2D KHỔ LỚN -->
-            <div id="panel_tab_2d" class="flex flex-col gap-3">
-                <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+            <div id="panel_2d" class="flex flex-col gap-3">
+                <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <div class="flex justify-between items-center mb-2 px-1">
                         <span class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                            <i class="fa-solid fa-shapes text-blue-600"></i> Mặt Cắt Ngang Tiết Diện (Lăn Chuột Zoom & Pan Rộng Rãi)
+                            <i class="fa-solid fa-shapes text-blue-600"></i> Mặt Cắt Ngang Tiết Diện
                         </span>
-                        <span class="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-md">CAD Viewport</span>
+                        <div class="flex items-center gap-1 text-[10px] text-slate-500 font-semibold">
+                            <i class="fa-solid fa-hand-pointer text-blue-500"></i> Kéo để Pan • Lăn chuột Zoom
+                        </div>
                     </div>
-                    <div class="w-full h-[380px] sm:h-[450px] bg-slate-900 rounded-xl border border-slate-800 relative flex items-center justify-center p-2 shadow-inner overflow-hidden select-none">
-                        <div class="absolute top-2 right-2 z-10 flex items-center gap-1 bg-slate-800/80 backdrop-blur-sm p-1.5 rounded-lg border border-slate-700">
-                            <button onclick="zoomSvgTransverse(1.25)" title="Phóng to" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
+                    <div class="w-full h-[320px] sm:h-[450px] bg-slate-900 rounded-2xl border border-slate-800 relative flex items-center justify-center p-2 shadow-inner overflow-hidden select-none">
+                        <!-- Nút Zoom 2D -->
+                        <div class="absolute top-2 right-2 z-10 flex items-center gap-1 bg-slate-800/80 backdrop-blur-sm p-1 rounded-xl border border-slate-700 shadow-md">
+                            <button onclick="zoomSvgTransverse(1.25)" title="Phóng to" class="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded-lg text-xs font-bold transition">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
-                            <button onclick="zoomSvgTransverse(0.8)" title="Thu nhỏ" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
+                            <button onclick="zoomSvgTransverse(0.8)" title="Thu nhỏ" class="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded-lg text-xs font-bold transition">
                                 <i class="fa-solid fa-minus"></i>
                             </button>
-                            <button onclick="resetSvgTransverseZoom()" title="Reset tỷ lệ ban đầu" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
+                            <button onclick="resetSvgTransverseZoom()" title="Reset tỷ lệ ban đầu" class="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded-lg text-xs font-bold transition">
                                 <i class="fa-solid fa-rotate-left"></i>
                             </button>
                         </div>
@@ -231,26 +286,26 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <span class="text-[11px] font-bold text-slate-800 uppercase mb-1.5 flex items-center gap-1">
                         <i class="fa-solid fa-arrows-split-up-and-left text-emerald-500"></i> Mặt Cắt Dọc Theo Chiều Dài Khoang
                     </span>
-                    <div class="w-full h-[180px] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center p-1">
+                    <div class="w-full h-[150px] sm:h-[180px] bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center p-1">
                         <svg id="svg-long" viewBox="0 0 400 200" class="w-full h-full"></svg>
                     </div>
                 </div>
             </div>
 
             <!-- PANEL 2: 3D TOÀN MÀN HÌNH -->
-            <div id="panel_tab_3d" class="hidden flex-col gap-3">
-                <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+            <div id="panel_3d" class="hidden flex-col gap-3">
+                <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <div class="flex justify-between items-center mb-2 px-1">
                         <span class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                            <i class="fa-solid fa-cube text-amber-500"></i> Mô Hình 3D Xoay 360° Toàn Màn Hình (Kéo chuột để xoay / Lăn chuột để phóng to)
+                            <i class="fa-solid fa-cube text-amber-500"></i> Mô Hình 3D Xoay 360°
                         </span>
-                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">Interactive 3D</span>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">Vuốt 1 ngón xoay • 2 ngón Zoom</span>
                     </div>
-                    <div id="threejs-container-large" class="w-full h-[520px] bg-slate-900 rounded-xl overflow-hidden relative shadow-inner">
+                    <div id="threejs-container-large" class="w-full h-[380px] sm:h-[520px] bg-slate-900 rounded-2xl overflow-hidden relative shadow-inner">
                         <canvas id="threejs-canvas" class="w-full h-full"></canvas>
                     </div>
                 </div>
@@ -260,14 +315,56 @@
 
     </main>
 
+    <!-- STICKY BOTTOM RESULT BAR (GHIM ĐÁY MÀN HÌNH ĐIỆN THOẠI) -->
+    <div id="sticky_result_bar" class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md text-white border-t border-slate-800 px-4 py-2.5 flex justify-between items-center shadow-2xl">
+        <div class="flex items-center space-x-3 sm:space-x-6">
+            <div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">Thể Tích Cát</div>
+                <div id="sticky_the_tich" class="text-sm sm:text-base font-black text-amber-400">0.000 m³</div>
+            </div>
+            <div class="h-7 w-px bg-slate-700"></div>
+            <div>
+                <div class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold">Khối Lượng</div>
+                <div id="sticky_khoi_luong" class="text-sm sm:text-base font-black text-emerald-400">0.000 tấn</div>
+            </div>
+        </div>
+        <button onclick="saoChepKetQua()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-lg flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-copy"></i>
+            <span>Sao chép</span>
+        </button>
+    </div>
+
     <script>
         function makeField(id, label, defVal) {
             return `
                 <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase block">${label}</label>
-                    <input id="${id}" type="number" step="0.01" value="${defVal}" oninput="tinhToan()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase block mb-0.5 truncate" title="${label}">${label}</label>
+                    <input id="${id}" type="number" inputmode="decimal" step="0.01" value="${defVal}" oninput="tinhToan()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
                 </div>
             `;
+        }
+
+        function applyPreset(type) {
+            if (type === 1) {
+                // 2 Tầng đáy thang phổ biến
+                document.getElementById('sel_p1').value = "Đáy hộp hình thang";
+                document.getElementById('sel_p2').value = "Hình hộp thang";
+                document.getElementById('sel_p3').value = "Không có phần 3";
+                document.getElementById('sel_p4').value = "Không có phần 4";
+            } else if (type === 2) {
+                // 3 Tầng đáy V + Cổ khoang chữ nhật
+                document.getElementById('sel_p1').value = "Đáy chữ V";
+                document.getElementById('sel_p2').value = "Hình hộp thang";
+                document.getElementById('sel_p3').value = "Hình hộp chữ nhật";
+                document.getElementById('sel_p4').value = "Không có phần 4";
+            } else if (type === 3) {
+                // 1 Tầng đáy bằng
+                document.getElementById('sel_p1').value = "Đáy bằng";
+                document.getElementById('sel_p2').value = "Hình hộp chữ nhật";
+                document.getElementById('sel_p3').value = "Không có phần 3";
+                document.getElementById('sel_p4').value = "Không có phần 4";
+            }
+            renderFormFields();
         }
 
         function renderFormFields() {
@@ -410,7 +507,7 @@
                 }
             }
 
-            // Tính zRanges và zTotal
+            // Cao độ Z
             let zCurr = 0;
             const zRanges = [];
             for (let lay of layers) {
@@ -419,7 +516,7 @@
             }
             const zTotal = zCurr;
 
-            // Thông số mặt cát
+            // Mặt cát
             const mType = parseInt(document.getElementById('sel_mat').value);
             const mParams = {
                 do_hut_cat: getVal('inp_do_hut_cat'),
@@ -452,8 +549,7 @@
                 return 0;
             }
 
-            // Tích phân Gauss-Legendre tính thể tích
-            const nPts = 16;
+            // Tích phân Gauss-Legendre 16 điểm
             const pts = [-0.98940093, -0.94457502, -0.8656312, -0.75540441, -0.61787624, -0.45801678, -0.28160355, -0.09501251, 0.09501251, 0.28160355, 0.45801678, 0.61787624, 0.75540441, 0.8656312, 0.94457502, 0.98940093];
             const wts = [0.02715246, 0.06225352, 0.09515851, 0.12462897, 0.14959599, 0.16915652, 0.18260342, 0.18945061, 0.18945061, 0.18260342, 0.16915652, 0.14959599, 0.12462897, 0.09515851, 0.06225352, 0.02715246];
 
@@ -484,10 +580,10 @@
                         if (Math.abs(ys[1] - ys[0]) < 1e-5) continue;
                         const yMid = (ys[0] + ys[1]) / 2, yHalf = (ys[1] - ys[0]) / 2;
 
-                        for (let i = 0; i < nPts; i++) {
+                        for (let i = 0; i < 16; i++) {
                             const xi = xMid + xHalf * pts[i];
                             const wi = xHalf * wts[i];
-                            for (let j = 0; j < nPts; j++) {
+                            for (let j = 0; j < 16; j++) {
                                 const yj = yMid + yHalf * pts[j];
                                 const wj = yHalf * wts[j];
 
@@ -523,8 +619,14 @@
             const rho = getVal('inp_rho') || 1.65;
             const totalMass = totalVolume * rho;
 
-            document.getElementById('res_the_tich').innerHTML = `${totalVolume.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3})} <span class="text-xs font-normal text-slate-300">m³</span>`;
-            document.getElementById('res_khoi_luong').innerHTML = `${totalMass.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3})} <span class="text-xs font-normal text-slate-300">tấn</span>`;
+            const strVol = totalVolume.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3});
+            const strMass = totalMass.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3});
+
+            document.getElementById('res_the_tich').innerHTML = `${strVol} <span class="text-xs font-normal text-slate-300">m³</span>`;
+            document.getElementById('res_khoi_luong').innerHTML = `${strMass} <span class="text-xs font-normal text-slate-300">tấn</span>`;
+
+            document.getElementById('sticky_the_tich').innerText = `${strVol} m³`;
+            document.getElementById('sticky_khoi_luong').innerText = `${strMass} tấn`;
 
             renderThreeJS(layers, zRanges, zTotal, mType, mParams);
             renderCADTransverse(layers, zRanges, zTotal, mType, mParams);
@@ -714,9 +816,6 @@
             `;
 
             // 2. MẶT CẮT DỌC
-            const L_ref = layers[0].L;
-            const D_end = mType === 2 ? (mParams.do_hut_duoi || 1.5) : D_mat;
-            const ySand_end = Math.min(yTopRim + D_end * scaleY, baseY);
             svgLong.innerHTML = `
                 <line x1="30" y1="35" x2="370" y2="35" stroke="#dc2626" stroke-dasharray="4,4" stroke-width="1.2"/>
                 <text x="200" y="24" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
@@ -727,7 +826,7 @@
         }
 
         // ==============================================================================
-        // THREE.JS 3D ENGINE & ROBUST BUILT-IN ORBIT CONTROLLER
+        // THREE.JS 3D ENGINE
         // ==============================================================================
         let scene, camera, renderer, meshGroup;
         let is3DDragging = false, prev3DX = 0, prev3DY = 0;
@@ -740,6 +839,43 @@
             camera.position.y = cameraTarget.y + spherical.radius * Math.cos(spherical.phi);
             camera.position.z = cameraTarget.z + spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
             camera.lookAt(cameraTarget);
+        }
+
+        function createQuadMesh(p1, p2, p3, p4, colorHex, opacity = 0.22) {
+            const geom = new THREE.BufferGeometry();
+            const vertices = new Float32Array([
+                p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z,
+                p1.x, p1.y, p1.z,  p3.x, p3.y, p3.z,  p4.x, p4.y, p4.z
+            ]);
+            geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geom.computeVertexNormals();
+            const mat = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                transparent: true,
+                opacity: opacity,
+                side: THREE.DoubleSide,
+                roughness: 0.5,
+                metalness: 0.1
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+
+            const edges = new THREE.EdgesGeometry(geom);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: colorHex, linewidth: 1.5 }));
+            mesh.add(line);
+            return mesh;
+        }
+
+        function createRingLine(z_lv, half_w, L, colorHex) {
+            const pts = [
+                new THREE.Vector3(-L/2, z_lv, -half_w),
+                new THREE.Vector3(L/2, z_lv, -half_w),
+                new THREE.Vector3(L/2, z_lv, half_w),
+                new THREE.Vector3(-L/2, z_lv, half_w),
+                new THREE.Vector3(-L/2, z_lv, -half_w)
+            ];
+            const geom = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2 });
+            return new THREE.Line(geom, mat);
         }
 
         function initThreeJS() {
@@ -765,7 +901,7 @@
             meshGroup = new THREE.Group();
             scene.add(meshGroup);
 
-            // MOUSE & TOUCH ORBIT CONTROLS (Smooth 360 Rotation)
+            // MOUSE & TOUCH ORBIT CONTROLS
             canvas.addEventListener('pointerdown', (e) => {
                 is3DDragging = true;
                 prev3DX = e.clientX;
@@ -814,44 +950,6 @@
             }
         }
 
-        function createRingLine(z_lv, half_w, L, colorHex) {
-            const pts = [
-                new THREE.Vector3(-L/2, z_lv, -half_w),
-                new THREE.Vector3(L/2, z_lv, -half_w),
-                new THREE.Vector3(L/2, z_lv, half_w),
-                new THREE.Vector3(-L/2, z_lv, half_w),
-                new THREE.Vector3(-L/2, z_lv, -half_w)
-            ];
-            const geom = new THREE.BufferGeometry().setFromPoints(pts);
-            const mat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2 });
-            return new THREE.Line(geom, mat);
-        }
-
-                function createQuadMesh(p1, p2, p3, p4, colorHex, opacity = 0.22) {
-            const geom = new THREE.BufferGeometry();
-            const vertices = new Float32Array([
-                p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z,
-                p1.x, p1.y, p1.z,  p3.x, p3.y, p3.z,  p4.x, p4.y, p4.z
-            ]);
-            geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-            geom.computeVertexNormals();
-            const mat = new THREE.MeshStandardMaterial({
-                color: colorHex,
-                transparent: true,
-                opacity: opacity,
-                side: THREE.DoubleSide,
-                roughness: 0.5,
-                metalness: 0.1
-            });
-            const mesh = new THREE.Mesh(geom, mat);
-
-            // Wireframe edges
-            const edges = new THREE.EdgesGeometry(geom);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: colorHex, linewidth: 1.5 }));
-            mesh.add(line);
-            return mesh;
-        }
-
         function renderThreeJS(layers, zRanges, zTotal, mType, mParams) {
             if (!meshGroup) return;
             while(meshGroup.children.length > 0) {
@@ -859,10 +957,9 @@
                 meshGroup.remove(obj);
             }
 
-            // Visual scaling so 3D proportions are balanced and handsome:
-            const zScale = 2.4; // Nâng chiều cao 2.4x để phân tầng rõ rệt
+            const zScale = 2.4;
             const L_ref = layers[0].L;
-            const L_vis = 36.0;  // Chiều dài hiển thị chuẩn trực quan
+            const L_vis = 36.0;
 
             cameraTarget.set(0, (zTotal * zScale) / 2, 0);
             updateCameraPosition();
@@ -888,11 +985,11 @@
                             new THREE.Vector3(-L_vis/2, ze, -halfB), new THREE.Vector3(L_vis/2, ze, -halfB),
                             new THREE.Vector3(L_vis/2, ze, halfB), new THREE.Vector3(-L_vis/2, ze, halfB)
                         ];
-                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pBot[2], pBot[3], col, 0.45)); // Floor
-                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.22)); // Right side
-                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.22)); // Left side
-                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.32)); // Bow
-                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.32)); // Stern
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pBot[2], pBot[3], col, 0.45));
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.22));
+                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.22));
+                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.32));
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.32));
                         prevHalfTop = halfB;
                     } else if (lay.type === "Đáy chữ V") {
                         const halfB = lay.B / 2;
@@ -916,17 +1013,16 @@
                             new THREE.Vector3(-L_vis/2, ze, -halfTop), new THREE.Vector3(L_vis/2, ze, -halfTop),
                             new THREE.Vector3(L_vis/2, ze, halfTop), new THREE.Vector3(-L_vis/2, ze, halfTop)
                         ];
-                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pBot[2], pBot[3], col, 0.45)); // Sàn đáy
-                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.22)); // Vát mạn phải
-                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.22)); // Vát mạn trái
-                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.32)); // Vát Mũi
-                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.32)); // Vát Lái
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pBot[2], pBot[3], col, 0.45));
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.22));
+                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.22));
+                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.32));
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.32));
                         prevHalfTop = halfTop;
                     }
                 } else {
                     if (lay.type === "Hình hộp chữ nhật") {
                         const halfB = lay.B / 2;
-                        // Sàn be nằm ngang tại độ cao zs nếu có bước thụt vào/ra
                         if (Math.abs(prevHalfTop - halfB) > 0.01) {
                             const pOut = [
                                 new THREE.Vector3(-L_vis/2, zs, -prevHalfTop), new THREE.Vector3(L_vis/2, zs, -prevHalfTop),
@@ -942,7 +1038,6 @@
                             meshGroup.add(createQuadMesh(pOut[0], pOut[3], pIn[3], pIn[0], col, 0.35));
                         }
 
-                        // Thành vách dựng THẲNG ĐỨNG 100% hình chữ nhật từ zs lên ze
                         const pBot = [
                             new THREE.Vector3(-L_vis/2, zs, -halfB), new THREE.Vector3(L_vis/2, zs, -halfB),
                             new THREE.Vector3(L_vis/2, zs, halfB), new THREE.Vector3(-L_vis/2, zs, halfB)
@@ -988,10 +1083,10 @@
                 }
             }
 
-            // Nóc trên cùng (0.0m) màu đỏ nét đứt
+            // Nóc trên cùng màu đỏ nét đứt
             meshGroup.add(createRingLine(zTotal * zScale, prevHalfTop, L_vis, 0xef4444));
 
-            // KHỐI CÁT 3D VÀNG ÓNG
+            // KHỐI CÁT 3D
             const sandMat = new THREE.MeshStandardMaterial({
                 color: 0xfde047,
                 roughness: 0.35,
@@ -1034,12 +1129,49 @@
             meshGroup.add(meshSand);
         }
 
-        // Graphic Tab Switcher Logic (2 Tabs)
-        function switchGraphicTab(tab) {
-            const p2d = document.getElementById('panel_tab_2d');
-            const p3d = document.getElementById('panel_tab_3d');
-            const b2d = document.getElementById('btn_tab_2d');
-            const b3d = document.getElementById('btn_tab_3d');
+        // ==============================================================================
+        // MOBILE TAB SWITCHER LOGIC (Form / 2D / 3D)
+        // ==============================================================================
+        function switchMobileTab(mode) {
+            const colForm = document.getElementById('col_form');
+            const colGraphics = document.getElementById('col_graphics');
+            const panel2D = document.getElementById('panel_2d');
+            const panel3D = document.getElementById('panel_3d');
+
+            const btnForm = document.getElementById('m_btn_form');
+            const btn2D = document.getElementById('m_btn_2d');
+            const btn3D = document.getElementById('m_btn_3d');
+
+            [btnForm, btn2D, btn3D].forEach(b => {
+                if(b) b.className = "mobile-tab-btn py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700 font-semibold";
+            });
+
+            if (mode === 'form') {
+                colForm.classList.remove('hidden');
+                colGraphics.classList.add('hidden');
+                btnForm.className = "mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-white font-bold";
+            } else if (mode === '2d') {
+                colForm.classList.add('hidden');
+                colGraphics.classList.remove('hidden');
+                panel2D.classList.remove('hidden');
+                panel3D.classList.add('hidden');
+                btn2D.className = "mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-white font-bold";
+            } else if (mode === '3d') {
+                colForm.classList.add('hidden');
+                colGraphics.classList.remove('hidden');
+                panel2D.classList.add('hidden');
+                panel3D.classList.remove('hidden');
+                btn3D.className = "mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-white font-bold";
+                setTimeout(resize3D, 50);
+            }
+        }
+
+        // DESKTOP TAB SWITCHER
+        function switchDesktopGraphicTab(tab) {
+            const p2d = document.getElementById('panel_2d');
+            const p3d = document.getElementById('panel_3d');
+            const b2d = document.getElementById('d_btn_tab_2d');
+            const b3d = document.getElementById('d_btn_tab_3d');
 
             if (tab === '2d') {
                 p2d.classList.remove('hidden');
@@ -1154,6 +1286,11 @@
             initThreeJS();
             renderFormFields();
             initSvgZoomPan();
+
+            // Check screen width for initial layout
+            if (window.innerWidth < 1024) {
+                switchMobileTab('form');
+            }
         });
 
     </script>
