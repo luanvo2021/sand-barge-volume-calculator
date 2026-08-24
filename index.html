@@ -833,13 +833,117 @@
                 ${textAnnotations}
             `;
 
-            // 2. MẶT CẮT DỌC
+                        // 2. MẶT CẮT DỌC CẠNH (HÌNH CHIẾU CẠNH THEO CHIỀU DÀI KHOANG)
+            const L_ref = layers[0].L;
+            const x0 = 40, x1 = 360;
+            const yRim = 40, yFloor = 160;
+            const wBox = x1 - x0, hBox = yFloor - yRim;
+
+            // Generate points along length for sand profile
+            const nSample = 60;
+            let ptsSand = [];
+            let pathDimsLong = "";
+
+            for (let i = 0; i <= nSample; i++) {
+                const frac = i / nSample;
+                const px = frac * L_ref;
+                const svgX = x0 + frac * wBox;
+
+                let dMat = 0.8;
+                if (mType === 1) {
+                    dMat = mParams.do_hut_cat || 0.8;
+                } else if (mType === 2) {
+                    const dHead = mParams.do_hut_dau || 0.5;
+                    const dTail = mParams.do_hut_duoi || 1.5;
+                    dMat = dHead + (dTail - dHead) * frac;
+                } else if (mType === 3) {
+                    const dNen = mParams.do_hut_nen || 1.4;
+                    const hCone = mParams.cao_non || 1.0;
+                    const lenCone = mParams.dai_chan_non || 20.0;
+                    const a = lenCone / 2.0;
+                    const r = Math.abs(px - L_ref / 2.0) / a;
+                    const cao = r <= 1.0 ? hCone * (1.0 - r) : 0.0;
+                    dMat = dNen - cao;
+                } else if (mType === 4) {
+                    const dNen = mParams.do_hut_nen || 1.4;
+                    const hDome = mParams.cao_num || 1.0;
+                    const lenDome = mParams.dai_chan_num || 24.0;
+                    const a = lenDome / 2.0;
+                    const rSq = Math.pow((px - L_ref / 2.0) / a, 2);
+                    const cao = rSq <= 1.0 ? hDome * (1.0 - rSq) : 0.0;
+                    dMat = dNen - cao;
+                }
+
+                const dClamped = Math.max(0, Math.min(dMat, zTotal));
+                const svgY = yRim + (dClamped / zTotal) * hBox;
+                ptsSand.push({ x: svgX, y: svgY });
+            }
+
+            let polySandPath = `M ${x0} ${yFloor} `;
+            ptsSand.forEach(p => { polySandPath += `L ${p.x} ${p.y} `; });
+            polySandPath += `L ${x1} ${yFloor} Z`;
+
+            let sandLinePath = `M ${ptsSand[0].x} ${ptsSand[0].y} `;
+            for (let i = 1; i < ptsSand.length; i++) {
+                sandLinePath += `L ${ptsSand[i].x} ${ptsSand[i].y} `;
+            }
+
+            // Dimension lines for Sand Profile in Long view
+            if (mType === 1) {
+                const yS = ptsSand[0].y;
+                pathDimsLong += `
+                    <line x1="${x1 - 30}" y1="${yRim}" x2="${x1 - 30}" y2="${yS}" stroke="#b45309" stroke-width="1.1"/>
+                    <rect x="${x1 - 65}" y="${(yRim + yS)/2 - 6}" width="45" height="12" fill="#0f172a" fill-opacity="0.9" rx="2"/>
+                    <text x="${x1 - 42}" y="${(yRim + yS)/2 + 3}" font-size="8" font-weight="bold" fill="#f59e0b" text-anchor="middle">Độ hụt (D)</text>
+                `;
+            } else if (mType === 2) {
+                const yHead = ptsSand[0].y;
+                const yTail = ptsSand[ptsSand.length - 1].y;
+                pathDimsLong += `
+                    <line x1="${x0 + 15}" y1="${yRim}" x2="${x0 + 15}" y2="${yHead}" stroke="#b45309" stroke-width="1.1"/>
+                    <text x="${x0 + 20}" y="${(yRim + yHead)/2 + 3}" font-size="7.5" font-weight="bold" fill="#f59e0b" text-anchor="start">Hụt Đầu</text>
+                    <line x1="${x1 - 15}" y1="${yRim}" x2="${x1 - 15}" y2="${yTail}" stroke="#b45309" stroke-width="1.1"/>
+                    <text x="${x1 - 20}" y="${(yRim + yTail)/2 + 3}" font-size="7.5" font-weight="bold" fill="#f59e0b" text-anchor="end">Hụt Đuôi</text>
+                `;
+            } else if (mType === 3) {
+                const aFrac = (mParams.dai_chan_non / 2.0) / L_ref;
+                const xL = 200 - aFrac * wBox, xR = 200 + aFrac * wBox;
+                pathDimsLong += `
+                    <line x1="${xL}" y1="${yFloor - 8}" x2="${xR}" y2="${yFloor - 8}" stroke="#38bdf8" stroke-width="1.1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+                    <text x="200" y="${yFloor - 12}" font-size="7.5" font-weight="bold" fill="#38bdf8" text-anchor="middle">Dài chân nón</text>
+                `;
+            } else if (mType === 4) {
+                const aFrac = (mParams.dai_chan_num / 2.0) / L_ref;
+                const xL = 200 - aFrac * wBox, xR = 200 + aFrac * wBox;
+                pathDimsLong += `
+                    <line x1="${xL}" y1="${yFloor - 8}" x2="${xR}" y2="${yFloor - 8}" stroke="#38bdf8" stroke-width="1.1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+                    <text x="200" y="${yFloor - 12}" font-size="7.5" font-weight="bold" fill="#38bdf8" text-anchor="middle">Dài chân đụn</text>
+                `;
+            }
+
             svgLong.innerHTML = `
-                <line x1="30" y1="35" x2="370" y2="35" stroke="#dc2626" stroke-dasharray="4,4" stroke-width="1.2"/>
-                <text x="200" y="24" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
-                <rect x="50" y="35" width="300" height="130" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>
-                <line x1="50" y1="180" x2="350" y2="180" stroke="#0284c7" stroke-width="1.2"/>
-                <text x="200" y="192" font-size="8.5" font-weight="bold" fill="#0284c7" text-anchor="middle">Chiều dài khoang (L)</text>
+                <!-- Khung vỏ cạnh xà lan -->
+                <rect x="${x0}" y="${yRim}" width="${wBox}" height="${hBox}" fill="#0f172a" stroke="#ffffff" stroke-width="2.5"/>
+                
+                <!-- Mốc mép trên -->
+                <line x1="${x0 - 20}" y1="${yRim}" x2="${x1 + 20}" y2="${yRim}" stroke="#dc2626" stroke-dasharray="4,4" stroke-width="1.3"/>
+                <text x="200" y="${yRim - 12}" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
+                
+                <!-- Khối cát vàng óng theo hình dạng thực tế -->
+                <path d="${polySandPath}" fill="#fde047" fill-opacity="0.85"/>
+                <path d="${sandLinePath}" fill="none" stroke="#d97706" stroke-width="2.0"/>
+                
+                <text x="200" y="${(yRim + yFloor)/2}" font-size="8.5" font-weight="bold" fill="#78350f" text-anchor="middle">MẶT CÁT</text>
+                
+                <!-- Ký hiệu Đầu - Đuôi -->
+                <text x="${x0 + 6}" y="${yFloor - 6}" font-size="8" font-weight="bold" fill="#94a3b8">ĐẦU MŨI</text>
+                <text x="${x1 - 6}" y="${yFloor - 6}" font-size="8" font-weight="bold" fill="#94a3b8" text-anchor="end">ĐUÔI LÁI</text>
+
+                <!-- Kích thước chiều dài L -->
+                <line x1="${x0}" y1="${yFloor + 18}" x2="${x1}" y2="${yFloor + 18}" stroke="#0284c7" stroke-width="1.2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+                <text x="200" y="${yFloor + 30}" font-size="8.5" font-weight="bold" fill="#0284c7" text-anchor="middle">Chiều dài khoang (L)</text>
+                
+                ${pathDimsLong}
             `;
         }
 
