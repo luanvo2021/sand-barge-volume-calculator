@@ -926,18 +926,35 @@
                 } else {
                     if (lay.type === "Hình hộp chữ nhật") {
                         const halfB = lay.B / 2;
+                        // Sàn be nằm ngang tại độ cao zs nếu có bước thụt vào/ra
+                        if (Math.abs(prevHalfTop - halfB) > 0.01) {
+                            const pOut = [
+                                new THREE.Vector3(-L_vis/2, zs, -prevHalfTop), new THREE.Vector3(L_vis/2, zs, -prevHalfTop),
+                                new THREE.Vector3(L_vis/2, zs, prevHalfTop), new THREE.Vector3(-L_vis/2, zs, prevHalfTop)
+                            ];
+                            const pIn = [
+                                new THREE.Vector3(-L_vis/2, zs, -halfB), new THREE.Vector3(L_vis/2, zs, -halfB),
+                                new THREE.Vector3(L_vis/2, zs, halfB), new THREE.Vector3(-L_vis/2, zs, halfB)
+                            ];
+                            meshGroup.add(createQuadMesh(pOut[0], pOut[1], pIn[1], pIn[0], col, 0.35));
+                            meshGroup.add(createQuadMesh(pOut[3], pOut[2], pIn[2], pIn[3], col, 0.35));
+                            meshGroup.add(createQuadMesh(pOut[1], pOut[2], pIn[2], pIn[1], col, 0.35));
+                            meshGroup.add(createQuadMesh(pOut[0], pOut[3], pIn[3], pIn[0], col, 0.35));
+                        }
+
+                        // Thành vách dựng thẳng đứng từ zs lên ze
                         const pBot = [
-                            new THREE.Vector3(-L_vis/2, zs, -prevHalfTop), new THREE.Vector3(L_vis/2, zs, -prevHalfTop),
-                            new THREE.Vector3(L_vis/2, zs, prevHalfTop), new THREE.Vector3(-L_vis/2, zs, prevHalfTop)
+                            new THREE.Vector3(-L_vis/2, zs, -halfB), new THREE.Vector3(L_vis/2, zs, -halfB),
+                            new THREE.Vector3(L_vis/2, zs, halfB), new THREE.Vector3(-L_vis/2, zs, halfB)
                         ];
                         const pTop = [
                             new THREE.Vector3(-L_vis/2, ze, -halfB), new THREE.Vector3(L_vis/2, ze, -halfB),
                             new THREE.Vector3(L_vis/2, ze, halfB), new THREE.Vector3(-L_vis/2, ze, halfB)
                         ];
-                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.18));
-                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.18));
-                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.28));
-                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.28));
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.20));
+                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.20));
+                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.30));
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.30));
                         prevHalfTop = halfB;
                     } else if (lay.type === "Hình hộp thang") {
                         const halfTop = lay.B_top / 2;
