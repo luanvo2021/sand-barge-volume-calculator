@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tính Thể Tích Cát Xà Lan V2 - Chuẩn Tỷ Lệ AutoCAD</title>
+    <title>Tính Thể Tích Cát Xà Lan V2 - Chuẩn Tỷ Lệ AutoCAD & 3D</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome 6 CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
@@ -22,6 +21,10 @@
         }
         #threejs-canvas {
             touch-action: none;
+            cursor: grab;
+        }
+        #threejs-canvas:active {
+            cursor: grabbing;
         }
         .tab-btn.active {
             background-color: #2563eb;
@@ -52,176 +55,203 @@
         </div>
     </header>
 
-    <!-- MOBILE TABS -->
-    <div class="lg:hidden sticky top-[57px] z-30 bg-slate-100/90 backdrop-blur-md px-3 py-2 border-b border-slate-200 shadow-sm">
-        <div class="grid grid-cols-2 gap-1.5 bg-slate-200/80 p-1 rounded-xl">
-            <button id="tab_btn_input" onclick="chuyenTab('input')" class="tab-btn active py-2 text-xs font-bold rounded-lg transition text-center flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-sliders"></i> Nhập Kích Thước
-            </button>
-            <button id="tab_btn_visual" onclick="chuyenTab('visual')" class="tab-btn py-2 text-xs font-bold text-slate-600 rounded-lg transition text-center flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-cube"></i> Hình Vẽ 3D & 2D
-            </button>
-        </div>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <main class="max-w-7xl mx-auto w-full p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 flex-grow">
-
-        <!-- CỘT 1: NHẬP LIỆU & KẾT QUẢ -->
-        <section id="pane_input" class="lg:col-span-5 flex flex-col gap-4">
-
-            <!-- KẾT QUẢ TÍNH TỨC THÌ -->
-            <div class="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-lg border border-blue-800/40">
-                <div class="flex justify-between items-center mb-2.5">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
-                        <i class="fa-solid fa-calculator text-amber-400"></i> KẾT QUẢ TÍNH TỨC THÌ (V2)
-                    </span>
-                </div>
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700/60 flex flex-col justify-center">
-                        <div class="text-[10px] text-slate-400 uppercase font-semibold">Tổng Thể Tích (V)</div>
-                        <div id="res_the_tich" class="text-xl sm:text-2xl font-black text-amber-400 mt-0.5">
-                            0.000 <span class="text-xs font-normal text-slate-300">m³</span>
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto w-full p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
+        
+        <!-- CỘT TRÁI: FORM NHẬP LIỆU -->
+        <section class="lg:col-span-5 flex flex-col gap-3">
+            
+            <!-- THẺ TÓM TẮT KẾT QUẢ -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl shadow-md border border-slate-700">
+                <div class="grid grid-cols-2 gap-3 divide-x divide-slate-700/80">
+                    <div class="px-1">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-cube text-amber-400"></i> Thể Tích Cát
                         </div>
+                        <div id="res_the_tich" class="text-xl sm:text-2xl font-black text-amber-400 mt-0.5">0.000 <span class="text-xs font-normal text-slate-300">m³</span></div>
                     </div>
-                    <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700/60 flex flex-col justify-center">
-                        <div class="text-[10px] text-slate-400 uppercase font-semibold">Tổng Khối Lượng (M)</div>
-                        <div id="res_khoi_luong" class="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5">
-                            0.000 <span class="text-xs font-normal text-slate-300">tấn</span>
+                    <div class="pl-3">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-weight-hanging text-emerald-400"></i> Khối Lượng
                         </div>
+                        <div id="res_khoi_luong" class="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5">0.000 <span class="text-xs font-normal text-slate-300">tấn</span></div>
                     </div>
                 </div>
             </div>
 
-            <!-- FORM TÙY BIẾN 4 PHẦN HÌNH HỌC -->
-            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4">
-
-                <!-- 1. PHẦN 1: ĐÁY SÀN -->
-                <div class="border-b border-slate-200 pb-3">
-                    <label class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5 mb-2">
-                        <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]">1</span>
-                        Phần 1: Đáy Sàn Xà Lan (Tầng 1)
-                    </label>
-                    <select id="sel_p1" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500 mb-2">
-                        <option value="Đáy hộp hình thang">Đáy hộp hình thang (Vát đáy)</option>
-                        <option value="Đáy bằng">Đáy sàn bằng</option>
-                        <option value="Đáy chữ V">Đáy chữ V</option>
-                    </select>
-                    <div id="fields_p1" class="grid grid-cols-2 gap-2 text-xs"></div>
+            <!-- NHÓM 1: PHẦN 1 - ĐÁY SÀN -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                        <span class="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px]">1</span>
+                        Phần 1: Đáy Sàn
+                    </h3>
                 </div>
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Dạng đáy sàn:</label>
+                        <select id="sel_p1" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                            <option value="Đáy hộp hình thang" selected>Đáy hộp hình thang (Vát 2 bên)</option>
+                            <option value="Đáy bằng">Đáy bằng (Sàn phẳng ngang)</option>
+                            <option value="Đáy chữ V">Đáy chữ V (Đáy chéo tam giác)</option>
+                        </select>
+                    </div>
+                    <div id="fields_p1" class="grid grid-cols-2 gap-2 pt-1"></div>
+                </div>
+            </div>
 
-                <!-- 2. PHẦN 2: THÂN CHÍNH -->
-                <div class="border-b border-slate-200 pb-3">
-                    <label class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5 mb-2">
-                        <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]">2</span>
+            <!-- NHÓM 2: PHẦN 2 - THÂN CHÍNH -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                        <span class="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px]">2</span>
                         Phần 2: Thân Chính (Tầng 2)
-                    </label>
-                    <select id="sel_p2" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500 mb-2">
-                        <option value="Hình hộp thang">Hình hộp thang (Vát mở rộng / thu hẹp)</option>
-                        <option value="Hình hộp chữ nhật">Hình hộp chữ nhật</option>
-                    </select>
-                    <div id="fields_p2" class="grid grid-cols-2 gap-2 text-xs"></div>
+                    </h3>
                 </div>
-
-                <!-- 3. PHẦN 3: TẦNG PHỤ 1 -->
-                <div class="border-b border-slate-200 pb-3">
-                    <label class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5 mb-2">
-                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span>
-                        Phần 3: Tầng Phụ 1 (Cổ Khoang / Thành Be)
-                    </label>
-                    <select id="sel_p3" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500 mb-2">
-                        <option value="Hình hộp chữ nhật">Hình hộp chữ nhật (Thụt lùi vào trong)</option>
-                        <option value="Hình hộp thang">Hình hộp thang</option>
-                        <option value="Không có phần 3">Không có phần 3</option>
-                    </select>
-                    <div id="fields_p3" class="grid grid-cols-2 gap-2 text-xs"></div>
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Dạng thân chính:</label>
+                        <select id="sel_p2" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                            <option value="Hình hộp thang" selected>Hình hộp thang (Vát mạn mở rộng)</option>
+                            <option value="Hình hộp chữ nhật">Hình hộp chữ nhật (Thẳng đứng)</option>
+                        </select>
+                    </div>
+                    <div id="fields_p2" class="grid grid-cols-2 gap-2 pt-1"></div>
                 </div>
-
-                <!-- 4. PHẦN 4: TẦNG PHỤ 2 -->
-                <div class="border-b border-slate-200 pb-3">
-                    <label class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5 mb-2">
-                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">4</span>
-                        Phần 4: Tầng Phụ 2 (Nằm trên Phần 3)
-                    </label>
-                    <select id="sel_p4" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500 mb-2">
-                        <option value="Không có phần 4">Không có phần 4</option>
-                        <option value="Hình hộp chữ nhật">Hình hộp chữ nhật</option>
-                        <option value="Hình hộp thang">Hình hộp thang</option>
-                    </select>
-                    <div id="fields_p4" class="grid grid-cols-2 gap-2 text-xs"></div>
-                </div>
-
-                <!-- 5. PHÂN BỐ MẶT CÁT -->
-                <div>
-                    <label class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5 mb-2">
-                        <span class="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[10px]">5</span>
-                        Dạng Phân Bố Bề Mặt Cát
-                    </label>
-                    <select id="sel_mat" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500 mb-2">
-                        <option value="1">1. Mặt phẳng (Dàn trải đều)</option>
-                        <option value="2">2. Dốc nghiêng trải dài từ Đầu đến Đuôi</option>
-                        <option value="3">3. Nền phẳng + Đỉnh hình nón</option>
-                        <option value="4">4. Nền phẳng + Đỉnh vòm núm (Nipple)</option>
-                    </select>
-                    <div id="fields_mat" class="grid grid-cols-2 gap-2 text-xs"></div>
-                </div>
-
-                <!-- TỶ TRỌNG CÁT -->
-                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <label class="text-xs font-bold text-slate-700">Khối lượng riêng cát (tấn/m³):</label>
-                    <input id="inp_rho" type="number" step="0.01" value="1.65" inputmode="decimal" oninput="tinhToan()" class="w-24 bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs text-right font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
-                </div>
-
             </div>
+
+            <!-- NHÓM 3: PHẦN 3 - TẦNG PHỤ 1 -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                        <span class="w-4 h-4 bg-slate-600 text-white rounded-full flex items-center justify-center text-[10px]">3</span>
+                        Phần 3: Tầng Phụ 1 (Cổ khoang / Thành be)
+                    </h3>
+                </div>
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Chọn tầng phụ 1:</label>
+                        <select id="sel_p3" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                            <option value="Không có phần 3" selected>Không có phần 3 (Tắt)</option>
+                            <option value="Hình hộp chữ nhật">Hình hộp chữ nhật (Thụt vào trong)</option>
+                            <option value="Hình hộp thang">Hình hộp thang</option>
+                        </select>
+                    </div>
+                    <div id="fields_p3" class="grid grid-cols-2 gap-2 pt-1"></div>
+                </div>
+            </div>
+
+            <!-- NHÓM 4: PHẦN 4 - TẦNG PHỤ 2 -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                        <span class="w-4 h-4 bg-slate-600 text-white rounded-full flex items-center justify-center text-[10px]">4</span>
+                        Phần 4: Tầng Phụ 2 (Nằm trên Phần 3)
+                    </h3>
+                </div>
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600 block mb-1">Chọn tầng phụ 2:</label>
+                        <select id="sel_p4" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                            <option value="Không có phần 4" selected>Không có phần 4 (Tắt)</option>
+                            <option value="Hình hộp chữ nhật">Hình hộp chữ nhật</option>
+                            <option value="Hình hộp thang">Hình hộp thang</option>
+                        </select>
+                    </div>
+                    <div id="fields_p4" class="grid grid-cols-2 gap-2 pt-1"></div>
+                </div>
+            </div>
+
+            <!-- NHÓM 5: BỀ MẶT CÁT -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-mountain text-amber-600"></i>
+                        Dạng Phân Bố Bề Mặt Cát
+                    </h3>
+                </div>
+                <div class="space-y-2">
+                    <div>
+                        <select id="sel_mat" onchange="renderFormFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                            <option value="1" selected>1 - Mặt phẳng (Dàn trải đều)</option>
+                            <option value="2">2 - Dốc nghiêng trải dài từ Đầu đến Đuôi</option>
+                            <option value="3">3 - Nền phẳng + Đỉnh hình nón (Chóp tam giác)</option>
+                            <option value="4">4 - Nền phẳng + Đỉnh vòm núm cong mượt (Nipple)</option>
+                        </select>
+                    </div>
+                    <div id="fields_mat" class="grid grid-cols-2 gap-2 pt-1"></div>
+                </div>
+            </div>
+
+            <!-- NHÓM 6: KHỐI LƯỢNG RIÊNG -->
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-700">Khối lượng riêng cát (tấn/m³):</span>
+                <input id="inp_rho" type="number" step="0.01" value="1.65" oninput="tinhToan()" class="w-24 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1 text-xs font-bold text-center text-slate-800 focus:ring-2 focus:ring-blue-500">
+            </div>
+
         </section>
 
-        <!-- CỘT 2: ĐỒ HỌA AUTOCAD (MẶT CẮT NGANG + 3D) -->
-        <section id="pane_visual" class="hidden lg:flex lg:col-span-7 flex-col gap-4">
+        <!-- CỘT PHẢI: ĐỒ HỌA TRỰC QUAN & 2 TAB CHUYÊN BIỆT -->
+        <section class="lg:col-span-7 flex flex-col gap-3">
 
-            <!-- KHUNG 1: MẶT CẮT NGANG AUTOCAD -->
-            <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-                <div class="flex justify-between items-center mb-2 px-1">
-                    <span class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                        <i class="fa-solid fa-shapes text-blue-600"></i> Mặt Cắt Ngang Tiết Diện (Phóng To Rõ Ràng & Không Đè Chữ)
-                    </span>
-                    <span class="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-md">Live CAD View</span>
-                </div>
-                <div class="w-full h-[380px] sm:h-[460px] bg-slate-900 rounded-xl border border-slate-800 relative flex items-center justify-center p-2 shadow-inner overflow-hidden select-none">
-                    <!-- Zoom & Pan control buttons -->
-                    <div class="absolute top-2 right-2 z-10 flex items-center gap-1 bg-slate-800/80 backdrop-blur-sm p-1.5 rounded-lg border border-slate-700">
-                        <button onclick="zoomSvgTransverse(1.25)" title="Phóng to" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
-                        <button onclick="zoomSvgTransverse(0.8)" title="Thu nhỏ" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
-                            <i class="fa-solid fa-minus"></i>
-                        </button>
-                        <button onclick="resetSvgTransverseZoom()" title="Reset tỷ lệ ban đầu" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
-                            <i class="fa-solid fa-rotate-left"></i>
-                        </button>
-                    </div>
-                    <svg id="svg-transverse" viewBox="0 0 460 280" class="w-full h-full cursor-grab active:cursor-grabbing"></svg>
+            <!-- TAB SWITCHER BUTTONS (2 TABS DUY NHẤT) -->
+            <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 w-full">
+                    <button id="btn_tab_2d" onclick="switchGraphicTab('2d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shapes"></i> 📐 1. Bản Vẽ 2D Khổ Lớn (Zoom & Pan)
+                    </button>
+                    <button id="btn_tab_3d" onclick="switchGraphicTab('3d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cube text-amber-500"></i> 🌐 2. Mô Hình 3D Toàn Khung (Xoay 360°)
+                    </button>
                 </div>
             </div>
 
-            <!-- KHUNG 2: 3D TRỰC QUAN ĐA TẦNG & MẶT CẮT DỌC -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-                    <div class="flex justify-between items-center mb-1.5">
-                        <span class="text-[11px] font-bold text-slate-800 uppercase flex items-center gap-1">
-                            <i class="fa-solid fa-cube text-amber-500"></i> Mô Hình 3D Vỏ & Vạch Phân Tầng
+            <!-- PANEL 1: 2D KHỔ LỚN -->
+            <div id="panel_tab_2d" class="flex flex-col gap-3">
+                <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-2 px-1">
+                        <span class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-shapes text-blue-600"></i> Mặt Cắt Ngang Tiết Diện (Lăn Chuột Zoom & Pan Rộng Rãi)
                         </span>
-                        <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Xoay 360°</span>
+                        <span class="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-md">CAD Viewport</span>
                     </div>
-                    <div id="threejs-container" class="w-full h-[180px] bg-slate-900 rounded-xl overflow-hidden relative shadow-inner">
-                        <canvas id="threejs-canvas" class="w-full h-full"></canvas>
+                    <div class="w-full h-[380px] sm:h-[450px] bg-slate-900 rounded-xl border border-slate-800 relative flex items-center justify-center p-2 shadow-inner overflow-hidden select-none">
+                        <div class="absolute top-2 right-2 z-10 flex items-center gap-1 bg-slate-800/80 backdrop-blur-sm p-1.5 rounded-lg border border-slate-700">
+                            <button onclick="zoomSvgTransverse(1.25)" title="Phóng to" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                            <button onclick="zoomSvgTransverse(0.8)" title="Thu nhỏ" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
+                            <button onclick="resetSvgTransverseZoom()" title="Reset tỷ lệ ban đầu" class="w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded text-xs font-bold transition">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                        <svg id="svg-transverse" viewBox="0 0 460 280" class="w-full h-full cursor-grab active:cursor-grabbing"></svg>
                     </div>
                 </div>
-                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+
+                <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <span class="text-[11px] font-bold text-slate-800 uppercase mb-1.5 flex items-center gap-1">
-                        <i class="fa-solid fa-arrows-split-up-and-left text-emerald-500"></i> Mặt Cắt Dọc Theo Chiều Dài
+                        <i class="fa-solid fa-arrows-split-up-and-left text-emerald-500"></i> Mặt Cắt Dọc Theo Chiều Dài Khoang
                     </span>
                     <div class="w-full h-[180px] bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center p-1">
                         <svg id="svg-long" viewBox="0 0 400 200" class="w-full h-full"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL 2: 3D TOÀN MÀN HÌNH -->
+            <div id="panel_tab_3d" class="hidden flex-col gap-3">
+                <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-2 px-1">
+                        <span class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-cube text-amber-500"></i> Mô Hình 3D Xoay 360° Toàn Màn Hình (Kéo chuột để xoay / Lăn chuột để phóng to)
+                        </span>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">Interactive 3D</span>
+                    </div>
+                    <div id="threejs-container-large" class="w-full h-[520px] bg-slate-900 rounded-xl overflow-hidden relative shadow-inner">
+                        <canvas id="threejs-canvas" class="w-full h-full"></canvas>
                     </div>
                 </div>
             </div>
@@ -230,70 +260,12 @@
 
     </main>
 
-    <!-- STICKY BOTTOM RESULT BAR -->
-    <div id="sticky_result_bar" class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md text-white border-t border-slate-800 px-4 py-2.5 flex justify-between items-center shadow-2xl">
-        <div class="flex items-center space-x-3">
-            <div>
-                <div class="text-[9px] text-slate-400 uppercase font-semibold">Thể Tích</div>
-                <div id="sticky_the_tich" class="text-sm font-black text-amber-400">0.000 m³</div>
-            </div>
-            <div class="h-6 w-px bg-slate-700"></div>
-            <div>
-                <div class="text-[9px] text-slate-400 uppercase font-semibold">Khối Lượng</div>
-                <div id="sticky_khoi_luong" class="text-sm font-black text-emerald-400">0.000 tấn</div>
-            </div>
-        </div>
-        <button onclick="saoChepKetQua()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg shadow flex items-center gap-1">
-            <i class="fa-solid fa-share-nodes"></i> Zalo
-        </button>
-    </div>
-
-    <!-- SCRIPT V2 LOGIC & THREE.JS -->
     <script>
-        const gauss64 = {
-            x: new Float64Array([
-                -0.9993050417357721, -0.9963401167719553, -0.9910133714767443, -0.9833362538846260,
-                -0.9733268277899110, -0.9610087996520538, -0.9464113748584028, -0.9295691721319396,
-                -0.9105221370785028, -0.8893154459951141, -0.8659993981540928, -0.8406292962525804,
-                -0.8132653151227976, -0.7839723589433414, -0.7528209956488344, -0.7198868512952848,
-                -0.6852494488820401, -0.6489924040940592, -0.6111933945417855, -0.5719340690089850,
-                -0.5313000676419913, -0.4893803597399336, -0.4462688434685324, -0.4020625278394474,
-                -0.3568613567709325, -0.3107683943324637, -0.2638890989069796, -0.2163313936647242,
-                -0.1682046894086609, -0.1196196238644485, -0.0706880854483749, -0.0215239925206969,
-                0.0215239925206969, 0.0706880854483749, 0.1196196238644485, 0.1682046894086609,
-                0.2163313936647242, 0.2638890989069796, 0.3107683943324637, 0.3568613567709325,
-                0.4020625278394474, 0.4462688434685324, 0.4893803597399336, 0.5313000676419913,
-                0.5719340690089850, 0.6111933945417855, 0.6489924040940592, 0.6852494488820401,
-                0.7198868512952848, 0.7528209956488344, 0.7839723589433414, 0.8132653151227976,
-                0.8406292962525804, 0.8659993981540928, 0.8893154459951141, 0.9105221370785028,
-                0.9295691721319396, 0.9464113748584028, 0.9610087996520538, 0.9733268277899110,
-                0.9833362538846260, 0.9910133714767443, 0.9963401167719553, 0.9993050417357721
-            ]),
-            w: new Float64Array([
-                0.0017832807216964, 0.0041470516144737, 0.0065044579689784, 0.0088467598263640,
-                0.0111681394601311, 0.0134630478967186, 0.0157260304760247, 0.0179517157756973,
-                0.0201348231535302, 0.0222701738083833, 0.0243527025687109, 0.0263774697150547,
-                0.0283396726142595, 0.0302346570724025, 0.0320579283548516, 0.0338051618371416,
-                0.0354722132568824, 0.0370551285402400, 0.0385501531786166, 0.0399537411327203,
-                0.0412625632426235, 0.0424735151236536, 0.0435837245293235, 0.0445905581637566,
-                0.0454916279274181, 0.0462847965813144, 0.0469681828162100, 0.0475401657148303,
-                0.0479993885964583, 0.0483447622348030, 0.0485754674415034, 0.0486909570091397,
-                0.0486909570091397, 0.0485754674415034, 0.0483447622348030, 0.0479993885964583,
-                0.0475401657148303, 0.0469681828162100, 0.0462847965813144, 0.0454916279274181,
-                0.0445905581637566, 0.0435837245293235, 0.0424735151236536, 0.0412625632426235,
-                0.0399537411327203, 0.0385501531786166, 0.0370551285402400, 0.0354722132568824,
-                0.0338051618371416, 0.0320579283548516, 0.0302346570724025, 0.0283396726142595,
-                0.0263774697150547, 0.0243527025687109, 0.0222701738083833, 0.0201348231535302,
-                0.0179517157756973, 0.0157260304760247, 0.0134630478967186, 0.0111681394601311,
-                0.0088467598263640, 0.0065044579689784, 0.0041470516144737, 0.0017832807216964
-            ])
-        };
-
         function makeField(id, label, defVal) {
             return `
-                <div class="flex flex-col">
-                    <label class="text-[11px] text-slate-600 font-semibold mb-0.5">${label}</label>
-                    <input id="${id}" type="number" step="any" value="${defVal}" inputmode="decimal" oninput="tinhToan()" class="w-full bg-slate-50 border border-slate-300 rounded-md p-1.5 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-blue-500">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase block">${label}</label>
+                    <input id="${id}" type="number" step="0.01" value="${defVal}" oninput="tinhToan()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
                 </div>
             `;
         }
@@ -438,152 +410,113 @@
                 }
             }
 
+            // Tính zRanges và zTotal
             let zCurr = 0;
             const zRanges = [];
             for (let lay of layers) {
-                const zNext = zCurr + lay.H;
-                zRanges.push({ start: zCurr, end: zNext, H: lay.H });
-                zCurr = zNext;
+                zRanges.push({ start: zCurr, end: zCurr + lay.H, h: lay.H });
+                zCurr += lay.H;
             }
             const zTotal = zCurr;
 
-            // Mặt cát
+            // Thông số mặt cát
             const mType = parseInt(document.getElementById('sel_mat').value);
-            const mParams = {};
-            if (mType === 1) mParams.do_hut_cat = getVal('inp_do_hut_cat');
-            else if (mType === 2) { mParams.do_hut_dau = getVal('inp_do_hut_dau'); mParams.do_hut_duoi = getVal('inp_do_hut_duoi'); }
-            else if (mType === 3) {
-                mParams.do_hut_nen = getVal('inp_do_hut_nen'); mParams.cao_non = getVal('inp_cao_non');
-                mParams.dai_chan_non = getVal('inp_dai_chan_non'); mParams.rong_chan_non = getVal('inp_rong_chan_non');
-            } else if (mType === 4) {
-                mParams.do_hut_nen = getVal('inp_do_hut_nen'); mParams.cao_num = getVal('inp_cao_num');
-                mParams.dai_chan_num = getVal('inp_dai_chan_num'); mParams.rong_chan_num = getVal('inp_rong_chan_num');
-            }
+            const mParams = {
+                do_hut_cat: getVal('inp_do_hut_cat'),
+                do_hut_dau: getVal('inp_do_hut_dau'),
+                do_hut_duoi: getVal('inp_do_hut_duoi'),
+                do_hut_nen: getVal('inp_do_hut_nen'),
+                cao_non: getVal('inp_cao_non'),
+                dai_chan_non: getVal('inp_dai_chan_non'),
+                rong_chan_non: getVal('inp_rong_chan_non'),
+                cao_num: getVal('inp_cao_num'),
+                dai_chan_num: getVal('inp_dai_chan_num'),
+                rong_chan_num: getVal('inp_rong_chan_num')
+            };
 
-            function doSauMatCat(x, y, L_ref) {
+            function doSauMat(x, y, L_ref) {
                 if (mType === 1) return mParams.do_hut_cat;
                 if (mType === 2) return mParams.do_hut_dau + (mParams.do_hut_duoi - mParams.do_hut_dau) * (x / L_ref);
                 if (mType === 3) {
                     const ax = mParams.dai_chan_non / 2.0, by = mParams.rong_chan_non / 2.0;
                     const r = Math.sqrt(Math.pow((x - L_ref/2)/ax, 2) + Math.pow(y/by, 2));
-                    const cao = r <= 1.0 ? mParams.cao_non * (1.0 - r) : 0.0;
+                    const cao = r <= 1.0 ? mParams.cao_non * (1.0 - r) : 0;
                     return mParams.do_hut_nen - cao;
                 }
                 if (mType === 4) {
                     const ax = mParams.dai_chan_num / 2.0, by = mParams.rong_chan_num / 2.0;
                     const r2 = Math.pow((x - L_ref/2)/ax, 2) + Math.pow(y/by, 2);
-                    const cao = r2 <= 1.0 ? mParams.cao_num * (1.0 - r2) : 0.0;
+                    const cao = r2 <= 1.0 ? mParams.cao_num * (1.0 - r2) : 0;
                     return mParams.do_hut_nen - cao;
                 }
                 return 0;
             }
 
-            const { x: pts, w: wts } = gauss64;
-            const n = pts.length;
+            // Tích phân Gauss-Legendre tính thể tích
+            const nPts = 16;
+            const pts = [-0.98940093, -0.94457502, -0.8656312, -0.75540441, -0.61787624, -0.45801678, -0.28160355, -0.09501251, 0.09501251, 0.28160355, 0.45801678, 0.61787624, 0.75540441, 0.8656312, 0.94457502, 0.98940093];
+            const wts = [0.02715246, 0.06225352, 0.09515851, 0.12462897, 0.14959599, 0.16915652, 0.18260342, 0.18945061, 0.18945061, 0.18260342, 0.16915652, 0.14959599, 0.12462897, 0.09515851, 0.06225352, 0.02715246];
+
             let totalVolume = 0;
-
-            for (let k = 0; k < layers.length; k++) {
-                const lay = layers[k];
-                const zr = zRanges[k];
+            for (let idx = 0; idx < layers.length; idx++) {
+                const lay = layers[idx];
+                const zStart = zRanges[idx].start;
+                const zEnd = zRanges[idx].end;
+                const hLay = zRanges[idx].h;
                 const L = lay.L;
-                let volLayer = 0;
-                const xDomains = [{ s: 0, e: 0.5 * L }, { s: 0.5 * L, e: L }];
 
-                if (lay.name === "Phần 1" && lay.type === "Đáy chữ V") {
+                let ySubs = [];
+                if (lay.type === "Đáy bằng" || lay.type === "Đáy chữ V" || lay.type === "Hình hộp chữ nhật") {
                     const B = lay.B;
-                    const yDomains = [{ s: -0.5 * B, e: 0 }, { s: 0, e: 0.5 * B }];
-
-                    for (let xd of xDomains) {
-                        const xMid = 0.5 * (xd.s + xd.e), xHalf = 0.5 * (xd.e - xd.s);
-                        for (let yd of yDomains) {
-                            const yMid = 0.5 * (yd.s + yd.e), yHalf = 0.5 * (yd.e - yd.s);
-                            for (let i = 0; i < n; i++) {
-                                const xi = xMid + xHalf * pts[i];
-                                const wi = xHalf * wts[i];
-                                for (let j = 0; j < n; j++) {
-                                    const yj = yMid + yHalf * pts[j];
-                                    const wj = yHalf * wts[j];
-                                    const D_mat = doSauMatCat(xi, yj, L);
-                                    const Z_sand = zTotal - D_mat;
-                                    const Z_floor = zr.start + zr.H * (2.0 * Math.abs(yj) / B);
-                                    volLayer += wi * wj * Math.max(Math.min(Z_sand - Z_floor, zr.end - Z_floor), 0);
-                                }
-                            }
-                        }
-                    }
-                } else if (lay.type === "Hình hộp chữ nhật" || (lay.name === "Phần 1" && lay.type === "Đáy bằng")) {
-                    const B = lay.B;
-                    const yDomains = [{ s: -0.5 * B, e: 0 }, { s: 0, e: 0.5 * B }];
-                    for (let xd of xDomains) {
-                        const xMid = 0.5 * (xd.s + xd.e), xHalf = 0.5 * (xd.e - xd.s);
-                        for (let yd of yDomains) {
-                            const yMid = 0.5 * (yd.s + yd.e), yHalf = 0.5 * (yd.e - yd.s);
-                            for (let i = 0; i < n; i++) {
-                                const xi = xMid + xHalf * pts[i];
-                                const wi = xHalf * wts[i];
-                                for (let j = 0; j < n; j++) {
-                                    const yj = yMid + yHalf * pts[j];
-                                    const wj = yHalf * wts[j];
-                                    const D_mat = doSauMatCat(xi, yj, L);
-                                    const Z_sand = zTotal - D_mat;
-                                    volLayer += wi * wj * Math.max(Math.min(Z_sand - zr.start, zr.H), 0);
-                                }
-                            }
-                        }
-                    }
+                    ySubs = [[-B/2, 0], [0, B/2]];
                 } else {
                     const B_top = lay.B_top, B_bot = lay.B_bot;
-                    const B_max = Math.max(B_top, B_bot);
-                    const B_min = Math.min(B_top, B_bot);
-                    const yDomains = [
-                        { s: -0.5 * B_max, e: -0.5 * B_min },
-                        { s: -0.5 * B_min, e: 0 },
-                        { s: 0, e: 0.5 * B_min },
-                        { s: 0.5 * B_min, e: 0.5 * B_max }
-                    ];
+                    const B_max = Math.max(B_top, B_bot), B_min = Math.min(B_top, B_bot);
+                    ySubs = [[-B_max/2, -B_min/2], [-B_min/2, 0], [0, B_min/2], [B_min/2, B_max/2]];
+                }
 
-                    for (let xd of xDomains) {
-                        const xMid = 0.5 * (xd.s + xd.e), xHalf = 0.5 * (xd.e - xd.s);
-                        for (let yd of yDomains) {
-                            if (Math.abs(yd.e - yd.s) < 1e-6) continue;
-                            const yMid = 0.5 * (yd.s + yd.e), yHalf = 0.5 * (yd.e - yd.s);
-                            for (let i = 0; i < n; i++) {
-                                const xi = xMid + xHalf * pts[i];
-                                const wi = xHalf * wts[i];
-                                for (let j = 0; j < n; j++) {
-                                    const yj = yMid + yHalf * pts[j];
-                                    const wj = yHalf * wts[j];
-                                    const D_mat = doSauMatCat(xi, yj, L);
-                                    const Z_sand = zTotal - D_mat;
-                                    const abs_y = Math.abs(yj);
-                                    
-                                    let Z_floor, Z_ceil;
+                const xSubs = [[0, L/2], [L/2, L]];
+                let volLayer = 0;
+
+                for (let xs of xSubs) {
+                    const xMid = (xs[0] + xs[1]) / 2, xHalf = (xs[1] - xs[0]) / 2;
+                    for (let ys of ySubs) {
+                        if (Math.abs(ys[1] - ys[0]) < 1e-5) continue;
+                        const yMid = (ys[0] + ys[1]) / 2, yHalf = (ys[1] - ys[0]) / 2;
+
+                        for (let i = 0; i < nPts; i++) {
+                            const xi = xMid + xHalf * pts[i];
+                            const wi = xHalf * wts[i];
+                            for (let j = 0; j < nPts; j++) {
+                                const yj = yMid + yHalf * pts[j];
+                                const wj = yHalf * wts[j];
+
+                                const D_mat = doSauMat(xi, yj, L);
+                                const Z_sand = zTotal - D_mat;
+                                const abs_y = Math.abs(yj);
+
+                                let Z_floor = zStart;
+                                let Z_ceil = zEnd;
+
+                                if (lay.type === "Đáy chữ V") {
+                                    Z_floor = zStart + hLay * (2 * abs_y / lay.B);
+                                } else if (lay.type === "Đáy hộp hình thang" || lay.type === "Hình hộp thang") {
+                                    const B_top = lay.B_top, B_bot = lay.B_bot;
                                     if (B_top >= B_bot) {
-                                        if (abs_y <= 0.5 * B_bot) {
-                                            Z_floor = zr.start;
-                                        } else {
-                                            const ty = (abs_y - 0.5 * B_bot) / Math.max(0.5 * B_top - 0.5 * B_bot, 1e-6);
-                                            Z_floor = zr.start + zr.H * ty;
-                                        }
-                                        Z_ceil = zr.end;
+                                        if (abs_y <= B_bot/2) Z_floor = zStart;
+                                        else Z_floor = zStart + hLay * ((abs_y - B_bot/2) / Math.max(B_top/2 - B_bot/2, 1e-5));
                                     } else {
-                                        Z_floor = zr.start;
-                                        if (abs_y <= 0.5 * B_top) {
-                                            Z_ceil = zr.end;
-                                        } else {
-                                            const ty = (abs_y - 0.5 * B_top) / Math.max(0.5 * B_bot - 0.5 * B_top, 1e-6);
-                                            Z_ceil = zr.start + zr.H * (1.0 - ty);
-                                        }
+                                        if (abs_y <= B_top/2) Z_ceil = zEnd;
+                                        else Z_ceil = zStart + hLay * (1.0 - (abs_y - B_top/2) / Math.max(B_bot/2 - B_top/2, 1e-5));
                                     }
-                                    
-                                    const h_col = Math.max(Math.min(Z_sand - Z_floor, Z_ceil - Z_floor), 0);
-                                    volLayer += wi * wj * h_col;
                                 }
+
+                                const h_col = Math.max(Math.min(Z_sand - Z_floor, Z_ceil - Z_floor), 0);
+                                volLayer += wi * wj * h_col;
                             }
                         }
                     }
                 }
-
                 totalVolume += volLayer;
             }
 
@@ -592,9 +525,6 @@
 
             document.getElementById('res_the_tich').innerHTML = `${totalVolume.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3})} <span class="text-xs font-normal text-slate-300">m³</span>`;
             document.getElementById('res_khoi_luong').innerHTML = `${totalMass.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3})} <span class="text-xs font-normal text-slate-300">tấn</span>`;
-
-            document.getElementById('sticky_the_tich').innerText = `${totalVolume.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3})} m³`;
-            document.getElementById('sticky_khoi_luong').innerText = `${totalMass.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3})} tấn`;
 
             renderThreeJS(layers, zRanges, zTotal, mType, mParams);
             renderCADTransverse(layers, zRanges, zTotal, mType, mParams);
@@ -618,22 +548,51 @@
             function makeDimH(x1, x2, y, text, offset_y, color="#38bdf8") {
                 const y_dim = y + offset_y;
                 return `
-                    <line x1="${x1}" y1="${y}" x2="${x1}" y2="${y_dim + (offset_y>=0?4:-4)}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
-                    <line x1="${x2}" y1="${y}" x2="${x2}" y2="${y_dim + (offset_y>=0?4:-4)}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
-                    <line x1="${x1}" y1="${y_dim}" x2="${x2}" y2="${y_dim}" stroke="${color}" stroke-width="1.1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-                    <rect x="${(x1+x2)/2 - 32}" y="${y_dim - (offset_y>=0?-3:12)}" width="64" height="11" fill="#0f172a" fill-opacity="0.85" rx="2"/>
-                    <text x="${(x1+x2)/2}" y="${y_dim - (offset_y>=0?-11:3)}" font-size="8" font-weight="bold" fill="${color}" text-anchor="middle">${text}</text>
+                    <g class="dim-group">
+                        <line x1="${x1}" y1="${y}" x2="${x1}" y2="${y_dim + (offset_y>=0?4:-4)}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
+                        <line x1="${x2}" y1="${y}" x2="${x2}" y2="${y_dim + (offset_y>=0?4:-4)}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
+                        <line x1="${x1}" y1="${y_dim}" x2="${x2}" y2="${y_dim}" stroke="${color}" stroke-width="1.1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+                        <rect x="${(x1+x2)/2 - 28}" y="${y_dim - (offset_y>=0?-3:12)}" width="56" height="11" fill="#0f172a" fill-opacity="0.85" rx="2"/>
+                        <text x="${(x1+x2)/2}" y="${y_dim - (offset_y>=0?-11:3)}" font-size="8" font-weight="bold" fill="${color}" text-anchor="middle">${text}</text>
+                    </g>
                 `;
             }
 
             function makeDimV(y1, y2, x, text, offset_x, color="#38bdf8") {
                 const x_dim = x + offset_x;
                 return `
-                    <line x1="${x}" y1="${y1}" x2="${x_dim + (offset_x>=0?4:-4)}" y2="${y1}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
-                    <line x1="${x}" y1="${y2}" x2="${x_dim + (offset_x>=0?4:-4)}" y2="${y2}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
-                    <line x1="${x_dim}" y1="${y1}" x2="${x_dim}" y2="${y2}" stroke="${color}" stroke-width="1.1"/>
-                    <rect x="${x_dim + (offset_x>=0?3:-48)}" y="${(y1+y2)/2 - 6}" width="45" height="12" fill="#0f172a" fill-opacity="0.85" rx="2"/>
-                    <text x="${x_dim + (offset_x>=0?25:-25)}" y="${(y1+y2)/2 + 3}" font-size="8" font-weight="bold" fill="${color}" text-anchor="middle">${text}</text>
+                    <g class="dim-group">
+                        <line x1="${x}" y1="${y1}" x2="${x_dim + (offset_x>=0?4:-4)}" y2="${y1}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
+                        <line x1="${x}" y1="${y2}" x2="${x_dim + (offset_x>=0?4:-4)}" y2="${y2}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
+                        <line x1="${x_dim}" y1="${y1}" x2="${x_dim}" y2="${y2}" stroke="${color}" stroke-width="1.1"/>
+                        <rect x="${x_dim + (offset_x>=0?3:-48)}" y="${(y1+y2)/2 - 6}" width="45" height="12" fill="#0f172a" fill-opacity="0.85" rx="2"/>
+                        <text x="${x_dim + (offset_x>=0?25:-25)}" y="${(y1+y2)/2 + 3}" font-size="8" font-weight="bold" fill="${color}" text-anchor="middle">${text}</text>
+                    </g>
+                `;
+            }
+
+            function makeDimSlanted(x1, y1, x2, y2, text, offset = 18, color = "#38bdf8") {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len < 1) return "";
+                const nx = dy / len;
+                const ny = -dx / len;
+                const p1x = x1 + offset * nx;
+                const p1y = y1 + offset * ny;
+                const p2x = x2 + offset * nx;
+                const p2y = y2 + offset * ny;
+                const mx = (p1x + p2x) / 2 + 8 * nx;
+                const my = (p1y + p2y) / 2 + 8 * ny;
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                return `
+                    <g class="dim-group">
+                        <line x1="${x1}" y1="${y1}" x2="${p1x + 4 * nx}" y2="${p1y + 4 * ny}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
+                        <line x1="${x2}" y1="${y2}" x2="${p2x + 4 * nx}" y2="${p2y + 4 * ny}" stroke="${color}" stroke-width="0.7" stroke-dasharray="2,2"/>
+                        <line x1="${p1x}" y1="${p1y}" x2="${p2x}" y2="${p2y}" stroke="${color}" stroke-width="1.2"/>
+                        <text x="${mx}" y="${my}" font-size="9" font-weight="bold" fill="${color}" text-anchor="middle" transform="rotate(${angle}, ${mx}, ${my})">${text}</text>
+                    </g>
                 `;
             }
 
@@ -727,7 +686,7 @@
             const yTopRim = baseY - zTotal * scaleY;
             pathHull += `
                 <line x1="${cX - prev_top_half}" y1="${yTopRim}" x2="${cX + prev_top_half}" y2="${yTopRim}" stroke="#ffffff" stroke-width="2.8"/>
-                <line x1="20" y1="${yTopRim}" x2="380" y2="${yTopRim}" stroke="#ef4444" stroke-dasharray="4,4" stroke-width="1.4"/>
+                <line x1="20" y1="${yTopRim}" x2="440" y2="${yTopRim}" stroke="#ef4444" stroke-dasharray="4,4" stroke-width="1.4"/>
                 <text x="${cX}" y="${yTopRim - 16}" font-size="8.5" font-weight="bold" fill="#ef4444" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
             `;
             const lastLay = layers[layers.length - 1];
@@ -738,58 +697,63 @@
             const ySand = Math.min(yTopRim + D_mat * scaleY, baseY);
             pathHull += `
                 <line x1="${cX - prev_top_half * 0.95}" y1="${ySand}" x2="${cX + prev_top_half * 0.95}" y2="${ySand}" stroke="#facc15" stroke-width="2.2"/>
-                <rect x="${cX - 60}" y="${ySand + 4}" width="120" height="15" rx="3" fill="#ca8a04" fill-opacity="0.85"/>
-                <text x="${cX}" y="${ySand + 15}" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">MẶT CÁT (Hụt ${D_mat}m)</text>
+                <rect x="${cX - 45}" y="${ySand + 4}" width="90" height="15" rx="3" fill="#ca8a04" fill-opacity="0.85"/>
+                <text x="${cX}" y="${ySand + 14}" font-size="8.5" font-weight="bold" fill="#ffffff" text-anchor="middle">MẶT CÁT</text>
             `;
-            pathDims += makeDimV(yTopRim, ySand, cX + prev_top_half, `Hụt ${D_mat}m`, 18, "#ca8a04");
+            pathDims += makeDimV(yTopRim, ySand, cX + prev_top_half, `Độ hụt (D)`, 18, '#facc15');
 
             svg.innerHTML = `
                 <defs>
-                    <pattern id="cadGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" stroke-width="0.6"/>
-                    </pattern>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                        <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#38bdf8"/>
+                    </marker>
                 </defs>
-                <rect width="100%" height="100%" fill="url(#cadGrid)"/>
                 ${pathHull}
                 ${pathDims}
                 ${textAnnotations}
             `;
-            if (typeof updateSvgViewBox === "function") {
-                updateSvgViewBox();
-            }
 
             // 2. MẶT CẮT DỌC
+            const L_ref = layers[0].L;
+            const D_end = mType === 2 ? (mParams.do_hut_duoi || 1.5) : D_mat;
+            const ySand_end = Math.min(yTopRim + D_end * scaleY, baseY);
             svgLong.innerHTML = `
                 <line x1="30" y1="35" x2="370" y2="35" stroke="#dc2626" stroke-dasharray="4,4" stroke-width="1.2"/>
-                <text x="200" y="24" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MÉP TRÊN THÀNH (${layers[0].L}m)</text>
+                <text x="200" y="24" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
                 <rect x="50" y="35" width="300" height="130" fill="#e5b869" stroke="#b8860b" stroke-width="1.5"/>
                 <line x1="50" y1="180" x2="350" y2="180" stroke="#0284c7" stroke-width="1.2"/>
-                <text x="200" y="192" font-size="8.5" font-weight="bold" fill="#0284c7" text-anchor="middle">Chiều dài lòng khoang L = ${layers[0].L}m</text>
+                <text x="200" y="192" font-size="8.5" font-weight="bold" fill="#0284c7" text-anchor="middle">Chiều dài khoang (L)</text>
             `;
         }
 
-        let scene, camera, renderer, controls, meshGroup;
+        // ==============================================================================
+        // THREE.JS 3D ENGINE & ROBUST BUILT-IN ORBIT CONTROLLER
+        // ==============================================================================
+        let scene, camera, renderer, meshGroup;
+        let is3DDragging = false, prev3DX = 0, prev3DY = 0;
+        let spherical = { radius: 70, theta: -Math.PI / 4, phi: Math.PI / 3 };
+        let cameraTarget = new THREE.Vector3(0, 1.5, 0);
+
+        function updateCameraPosition() {
+            if (!camera) return;
+            camera.position.x = cameraTarget.x + spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+            camera.position.y = cameraTarget.y + spherical.radius * Math.cos(spherical.phi);
+            camera.position.z = cameraTarget.z + spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+            camera.lookAt(cameraTarget);
+        }
 
         function initThreeJS() {
-            const container = document.getElementById('threejs-container');
             const canvas = document.getElementById('threejs-canvas');
+            if (!canvas) return;
+
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0f172a);
 
-            camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 1, 1000);
-            camera.position.set(38, 22, 45); // Camera gần hơn và to rõ
+            camera = new THREE.PerspectiveCamera(40, 1.6, 1, 1000);
+            updateCameraPosition();
 
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.rotateSpeed = 0.75;
-            controls.zoomSpeed = 0.85;
-            controls.panSpeed = 0.8;
-            controls.target.set(0, 1.5, 0);
 
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
             scene.add(ambientLight);
@@ -801,20 +765,53 @@
             meshGroup = new THREE.Group();
             scene.add(meshGroup);
 
+            // MOUSE & TOUCH ORBIT CONTROLS (Smooth 360 Rotation)
+            canvas.addEventListener('pointerdown', (e) => {
+                is3DDragging = true;
+                prev3DX = e.clientX;
+                prev3DY = e.clientY;
+                canvas.setPointerCapture(e.pointerId);
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (!is3DDragging) return;
+                const dx = e.clientX - prev3DX;
+                const dy = e.clientY - prev3DY;
+                prev3DX = e.clientX;
+                prev3DY = e.clientY;
+
+                spherical.theta -= dx * 0.008;
+                spherical.phi = Math.max(0.08, Math.min(Math.PI / 2 + 0.1, spherical.phi - dy * 0.008));
+                updateCameraPosition();
+            });
+
+            canvas.addEventListener('pointerup', (e) => {
+                is3DDragging = false;
+                try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                spherical.radius = Math.max(15, Math.min(180, spherical.radius + e.deltaY * 0.04));
+                updateCameraPosition();
+            }, { passive: false });
+
             function animate() {
                 requestAnimationFrame(animate);
-                controls.update();
                 renderer.render(scene, camera);
             }
             animate();
 
-            window.addEventListener('resize', () => {
-                if (container.clientWidth && container.clientHeight) {
-                    camera.aspect = container.clientWidth / container.clientHeight;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(container.clientWidth, container.clientHeight);
-                }
-            });
+            window.addEventListener('resize', resize3D);
+        }
+
+        function resize3D() {
+            const cont = document.getElementById('threejs-container-large');
+            if (renderer && camera && cont && cont.clientWidth > 0 && cont.clientHeight > 0) {
+                camera.aspect = cont.clientWidth / cont.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(cont.clientWidth, cont.clientHeight);
+            }
         }
 
         function createRingLine(z_lv, half_w, L, colorHex) {
@@ -837,9 +834,8 @@
                 meshGroup.remove(obj);
             }
 
-            if (controls) {
-                controls.target.set(0, zTotal / 2, 0);
-            }
+            cameraTarget.set(0, zTotal / 2, 0);
+            updateCameraPosition();
 
             const L_ref = layers[0].L;
             const tierColors = [0x38bdf8, 0x60a5fa, 0x818cf8, 0xa78bfa];
@@ -856,7 +852,7 @@
                         const halfB = lay.B / 2;
                         meshGroup.add(createRingLine(zr.start, halfB, L_ref, 0x0ea5e9));
                         if (layers.length > 1) {
-                            meshGroup.add(createRingLine(zr.end, halfB, L_ref, 0x2563eb)); // Đường chia P1-P2
+                            meshGroup.add(createRingLine(zr.end, halfB, L_ref, 0x2563eb));
                         }
                         prevHalfTop = halfB;
                     } else if (lay.type === "Đáy chữ V") {
@@ -864,7 +860,7 @@
                         const ptsV = [new THREE.Vector3(-L_ref/2, zr.start, 0), new THREE.Vector3(L_ref/2, zr.start, 0)];
                         meshGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsV), new THREE.LineBasicMaterial({ color: 0x0284c7 })));
                         if (layers.length > 1) {
-                            meshGroup.add(createRingLine(zr.end, halfB, L_ref, 0x2563eb)); // Đường chia P1-P2
+                            meshGroup.add(createRingLine(zr.end, halfB, L_ref, 0x2563eb));
                         }
                         prevHalfTop = halfB;
                     } else if (lay.type === "Đáy hộp hình thang") {
@@ -872,7 +868,7 @@
                         const halfBot = lay.B_bot / 2;
                         meshGroup.add(createRingLine(zr.start, halfBot, L_ref, 0x0ea5e9));
                         if (layers.length > 1) {
-                            meshGroup.add(createRingLine(zr.end, halfTop, L_ref, 0x2563eb)); // Đường chia P1-P2
+                            meshGroup.add(createRingLine(zr.end, halfTop, L_ref, 0x2563eb));
                         }
                         prevHalfTop = halfTop;
                     }
@@ -939,77 +935,37 @@
             meshGroup.add(meshSand);
         }
 
-        function chuyenTab(tab) {
-            const pInput = document.getElementById('pane_input');
-            const pVisual = document.getElementById('pane_visual');
-            const btnIn = document.getElementById('tab_btn_input');
-            const btnVis = document.getElementById('tab_btn_visual');
+        // Graphic Tab Switcher Logic (2 Tabs)
+        function switchGraphicTab(tab) {
+            const p2d = document.getElementById('panel_tab_2d');
+            const p3d = document.getElementById('panel_tab_3d');
+            const b2d = document.getElementById('btn_tab_2d');
+            const b3d = document.getElementById('btn_tab_3d');
 
-            if (tab === 'input') {
-                pInput.classList.remove('hidden');
-                pVisual.classList.add('hidden');
-                btnIn.classList.add('active');
-                btnVis.classList.remove('active');
-            } else {
-                pInput.classList.add('hidden');
-                pVisual.classList.remove('hidden');
-                btnVis.classList.add('active');
-                btnIn.classList.remove('active');
-                setTimeout(() => {
-                    const c = document.getElementById('threejs-container');
-                    if (camera && renderer && c) {
-                        camera.aspect = c.clientWidth / c.clientHeight;
-                        camera.updateProjectionMatrix();
-                        renderer.setSize(c.clientWidth, c.clientHeight);
-                    }
-                }, 50);
+            if (tab === '2d') {
+                p2d.classList.remove('hidden');
+                p3d.classList.add('hidden');
+                b2d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2";
+                b3d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2";
+            } else if (tab === '3d') {
+                p3d.classList.remove('hidden');
+                p2d.classList.add('hidden');
+                b3d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2";
+                b2d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2";
+                setTimeout(resize3D, 50);
             }
         }
 
         function saoChepKetQua() {
             const v = document.getElementById('res_the_tich').innerText.replace('m³', '').trim();
             const m = document.getElementById('res_khoi_luong').innerText.replace('tấn', '').trim();
-            const msg = `🚢 BÁO CÁO NGHIỆM THU CÁT XÀ LAN (V2)\n- Thể tích: ${v} m³\n- Khối lượng: ${m} tấn\n- Phần mềm tính toán đa tầng chuyên dụng`;
+            const msg = `🚢 BÁO CÁO NGHIỆM THU CÁT XÀ LAN (V2)
+- Thể tích: ${v} m³
+- Khối lượng: ${m} tấn
+- Phần mềm tính toán đa tầng chuyên dụng`;
             navigator.clipboard.writeText(msg).then(() => {
                 alert("Đã sao chép báo cáo vào bộ nhớ tạm! Bạn có thể dán (Paste) vào Zalo ngay.");
             });
-        }
-
-
-        
-        // Graphic Tab Switcher Logic (2 Tabs)
-        function switchGraphicTab(tab) {
-            const p2d = document.getElementById('panel_tab_2d');
-            const p3d = document.getElementById('panel_tab_3d');
-
-            const b2d = document.getElementById('btn_tab_2d');
-            const b3d = document.getElementById('btn_tab_3d');
-
-            [b2d, b3d].forEach(b => {
-                if(b) b.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2";
-            });
-
-            p2d.classList.add('hidden');
-            p3d.classList.add('hidden');
-
-            const canvas = document.getElementById('threejs-canvas');
-
-            if (tab === '2d') {
-                p2d.classList.remove('hidden');
-                b2d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2";
-            } else if (tab === '3d') {
-                p3d.classList.remove('hidden');
-                b3d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2";
-                const cont3d = document.getElementById('threejs-container-large');
-                if (cont3d && canvas && canvas.parentElement !== cont3d) {
-                    cont3d.appendChild(canvas);
-                }
-                if (renderer && camera && cont3d) {
-                    renderer.setSize(cont3d.clientWidth, cont3d.clientHeight);
-                    camera.aspect = cont3d.clientWidth / cont3d.clientHeight;
-                    camera.updateProjectionMatrix();
-                }
-            }
         }
 
         // Interactive SVG Zoom & Pan Logic
@@ -1030,11 +986,20 @@
             if (!svg) return;
 
             const rect = svg.getBoundingClientRect();
-            const cx = centerPoint ? ((centerPoint.x - rect.left) / rect.width) * svgViewBox.w + svgViewBox.x : svgViewBox.x + svgViewBox.w / 2;
-            const cy = centerPoint ? ((centerPoint.y - rect.top) / rect.height) * svgViewBox.h + svgViewBox.y : svgViewBox.y + svgViewBox.h / 2;
+            let cx = svgViewBox.x + svgViewBox.w / 2;
+            let cy = svgViewBox.y + svgViewBox.h / 2;
 
-            const newW = Math.max(Math.min(svgViewBox.w / factor, 1200), 80);
-            const newH = Math.max(Math.min(svgViewBox.h / factor, 800), 50);
+            if (centerPoint) {
+                const mouseX = centerPoint.x - rect.left;
+                const mouseY = centerPoint.y - rect.top;
+                cx = svgViewBox.x + (mouseX / rect.width) * svgViewBox.w;
+                cy = svgViewBox.y + (mouseY / rect.height) * svgViewBox.h;
+            }
+
+            const newW = svgViewBox.w / factor;
+            const newH = svgViewBox.h / factor;
+
+            if (newW < 80 || newW > 1200) return;
 
             svgViewBox.x = cx - (cx - svgViewBox.x) * (newW / svgViewBox.w);
             svgViewBox.y = cy - (cy - svgViewBox.y) * (newH / svgViewBox.h);
@@ -1053,14 +1018,12 @@
             const svg = document.getElementById('svg-transverse');
             if (!svg) return;
 
-            // Mouse wheel scroll to zoom
             svg.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const factor = e.deltaY < 0 ? 1.15 : 0.87;
                 zoomSvgTransverse(factor, { x: e.clientX, y: e.clientY });
             }, { passive: false });
 
-            // Mouse drag to pan
             svg.addEventListener('pointerdown', (e) => {
                 isPanningSvg = true;
                 startPanPoint = { x: e.clientX, y: e.clientY };
