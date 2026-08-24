@@ -827,7 +827,7 @@
             return new THREE.Line(geom, mat);
         }
 
-        function createQuadMesh(p1, p2, p3, p4, colorHex, opacity = 0.22) {
+                function createQuadMesh(p1, p2, p3, p4, colorHex, opacity = 0.22) {
             const geom = new THREE.BufferGeometry();
             const vertices = new Float32Array([
                 p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z,
@@ -840,7 +840,7 @@
                 transparent: true,
                 opacity: opacity,
                 side: THREE.DoubleSide,
-                roughness: 0.6,
+                roughness: 0.5,
                 metalness: 0.1
             });
             const mesh = new THREE.Mesh(geom, mat);
@@ -942,7 +942,7 @@
                             meshGroup.add(createQuadMesh(pOut[0], pOut[3], pIn[3], pIn[0], col, 0.35));
                         }
 
-                        // Thành vách dựng thẳng đứng từ zs lên ze
+                        // Thành vách dựng THẲNG ĐỨNG 100% hình chữ nhật từ zs lên ze
                         const pBot = [
                             new THREE.Vector3(-L_vis/2, zs, -halfB), new THREE.Vector3(L_vis/2, zs, -halfB),
                             new THREE.Vector3(L_vis/2, zs, halfB), new THREE.Vector3(-L_vis/2, zs, halfB)
@@ -959,6 +959,18 @@
                     } else if (lay.type === "Hình hộp thang") {
                         const halfTop = lay.B_top / 2;
                         const halfBot = lay.B_bot / 2;
+                        if (Math.abs(prevHalfTop - halfBot) > 0.01) {
+                            const pOut = [
+                                new THREE.Vector3(-L_vis/2, zs, -prevHalfTop), new THREE.Vector3(L_vis/2, zs, -prevHalfTop),
+                                new THREE.Vector3(L_vis/2, zs, prevHalfTop), new THREE.Vector3(-L_vis/2, zs, prevHalfTop)
+                            ];
+                            const pIn = [
+                                new THREE.Vector3(-L_vis/2, zs, -halfBot), new THREE.Vector3(L_vis/2, zs, -halfBot),
+                                new THREE.Vector3(L_vis/2, zs, halfBot), new THREE.Vector3(-L_vis/2, zs, halfBot)
+                            ];
+                            meshGroup.add(createQuadMesh(pOut[0], pOut[1], pIn[1], pIn[0], col, 0.35));
+                            meshGroup.add(createQuadMesh(pOut[3], pOut[2], pIn[2], pIn[3], col, 0.35));
+                        }
                         const pBot = [
                             new THREE.Vector3(-L_vis/2, zs, -halfBot), new THREE.Vector3(L_vis/2, zs, -halfBot),
                             new THREE.Vector3(L_vis/2, zs, halfBot), new THREE.Vector3(-L_vis/2, zs, halfBot)
