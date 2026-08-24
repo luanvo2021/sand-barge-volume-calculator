@@ -827,6 +827,31 @@
             return new THREE.Line(geom, mat);
         }
 
+        function createQuadMesh(p1, p2, p3, p4, colorHex, opacity = 0.22) {
+            const geom = new THREE.BufferGeometry();
+            const vertices = new Float32Array([
+                p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z,
+                p1.x, p1.y, p1.z,  p3.x, p3.y, p3.z,  p4.x, p4.y, p4.z
+            ]);
+            geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geom.computeVertexNormals();
+            const mat = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                transparent: true,
+                opacity: opacity,
+                side: THREE.DoubleSide,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+
+            // Wireframe edges
+            const edges = new THREE.EdgesGeometry(geom);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: colorHex, linewidth: 1.5 }));
+            mesh.add(line);
+            return mesh;
+        }
+
         function renderThreeJS(layers, zRanges, zTotal, mType, mParams) {
             if (!meshGroup) return;
             while(meshGroup.children.length > 0) {
@@ -834,101 +859,146 @@
                 meshGroup.remove(obj);
             }
 
-            cameraTarget.set(0, zTotal / 2, 0);
+            // Visual scaling so 3D proportions are balanced and handsome:
+            const zScale = 2.4; // Nâng chiều cao 2.4x để phân tầng rõ rệt
+            const L_ref = layers[0].L;
+            const L_vis = 36.0;  // Chiều dài hiển thị chuẩn trực quan
+
+            cameraTarget.set(0, (zTotal * zScale) / 2, 0);
             updateCameraPosition();
 
-            const L_ref = layers[0].L;
-            const tierColors = [0x38bdf8, 0x60a5fa, 0x818cf8, 0xa78bfa];
-
+            const tierColors = [0x0ea5e9, 0x2563eb, 0x4f46e5, 0x7c3aed];
             let prevHalfTop = 0;
 
             for (let k = 0; k < layers.length; k++) {
                 const lay = layers[k];
                 const zr = zRanges[k];
+                const zs = zr.start * zScale;
+                const ze = zr.end * zScale;
                 const col = tierColors[k % tierColors.length];
 
                 if (k === 0) {
                     if (lay.type === "Đáy bằng") {
                         const halfB = lay.B / 2;
-                        meshGroup.add(createRingLine(zr.start, halfB, L_ref, 0x0ea5e9));
-                        if (layers.length > 1) {
-                            meshGroup.add(createRingLine(zr.end, halfB, L_ref, 0x2563eb));
-                        }
+                        const pBot = [
+                            new THREE.Vector3(-L_vis/2, zs, -halfB), new THREE.Vector3(L_vis/2, zs, -halfB),
+                            new THREE.Vector3(L_vis/2, zs, halfB), new THREE.Vector3(-L_vis/2, zs, halfB)
+                        ];
+                        const pTop = [
+                            new THREE.Vector3(-L_vis/2, ze, -halfB), new THREE.Vector3(L_vis/2, ze, -halfB),
+                            new THREE.Vector3(L_vis/2, ze, halfB), new THREE.Vector3(-L_vis/2, ze, halfB)
+                        ];
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pBot[2], pBot[3], col, 0.45)); // Floor
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.22)); // Right side
+                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.22)); // Left side
+                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.32)); // Bow
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.32)); // Stern
                         prevHalfTop = halfB;
                     } else if (lay.type === "Đáy chữ V") {
                         const halfB = lay.B / 2;
-                        const ptsV = [new THREE.Vector3(-L_ref/2, zr.start, 0), new THREE.Vector3(L_ref/2, zr.start, 0)];
-                        meshGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsV), new THREE.LineBasicMaterial({ color: 0x0284c7 })));
-                        if (layers.length > 1) {
-                            meshGroup.add(createRingLine(zr.end, halfB, L_ref, 0x2563eb));
-                        }
+                        const vBot1 = new THREE.Vector3(-L_vis/2, zs, 0);
+                        const vBot2 = new THREE.Vector3(L_vis/2, zs, 0);
+                        const pTop = [
+                            new THREE.Vector3(-L_vis/2, ze, -halfB), new THREE.Vector3(L_vis/2, ze, -halfB),
+                            new THREE.Vector3(L_vis/2, ze, halfB), new THREE.Vector3(-L_vis/2, ze, halfB)
+                        ];
+                        meshGroup.add(createQuadMesh(vBot1, vBot2, pTop[1], pTop[0], col, 0.25));
+                        meshGroup.add(createQuadMesh(vBot1, vBot2, pTop[2], pTop[3], col, 0.25));
                         prevHalfTop = halfB;
                     } else if (lay.type === "Đáy hộp hình thang") {
                         const halfTop = lay.B_top / 2;
                         const halfBot = lay.B_bot / 2;
-                        meshGroup.add(createRingLine(zr.start, halfBot, L_ref, 0x0ea5e9));
-                        if (layers.length > 1) {
-                            meshGroup.add(createRingLine(zr.end, halfTop, L_ref, 0x2563eb));
-                        }
+                        const pBot = [
+                            new THREE.Vector3(-L_vis/2, zs, -halfBot), new THREE.Vector3(L_vis/2, zs, -halfBot),
+                            new THREE.Vector3(L_vis/2, zs, halfBot), new THREE.Vector3(-L_vis/2, zs, halfBot)
+                        ];
+                        const pTop = [
+                            new THREE.Vector3(-L_vis/2, ze, -halfTop), new THREE.Vector3(L_vis/2, ze, -halfTop),
+                            new THREE.Vector3(L_vis/2, ze, halfTop), new THREE.Vector3(-L_vis/2, ze, halfTop)
+                        ];
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pBot[2], pBot[3], col, 0.45)); // Sàn đáy
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.22)); // Vát mạn phải
+                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.22)); // Vát mạn trái
+                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.32)); // Vát Mũi
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.32)); // Vát Lái
                         prevHalfTop = halfTop;
                     }
                 } else {
                     if (lay.type === "Hình hộp chữ nhật") {
                         const halfB = lay.B / 2;
-                        if (k < layers.length - 1) {
-                            meshGroup.add(createRingLine(zr.end, halfB, L_ref, col));
-                        }
+                        const pBot = [
+                            new THREE.Vector3(-L_vis/2, zs, -prevHalfTop), new THREE.Vector3(L_vis/2, zs, -prevHalfTop),
+                            new THREE.Vector3(L_vis/2, zs, prevHalfTop), new THREE.Vector3(-L_vis/2, zs, prevHalfTop)
+                        ];
+                        const pTop = [
+                            new THREE.Vector3(-L_vis/2, ze, -halfB), new THREE.Vector3(L_vis/2, ze, -halfB),
+                            new THREE.Vector3(L_vis/2, ze, halfB), new THREE.Vector3(-L_vis/2, ze, halfB)
+                        ];
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.18));
+                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.18));
+                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.28));
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.28));
                         prevHalfTop = halfB;
                     } else if (lay.type === "Hình hộp thang") {
                         const halfTop = lay.B_top / 2;
                         const halfBot = lay.B_bot / 2;
-                        if (k < layers.length - 1) {
-                            meshGroup.add(createRingLine(zr.end, halfTop, L_ref, col));
-                        }
+                        const pBot = [
+                            new THREE.Vector3(-L_vis/2, zs, -halfBot), new THREE.Vector3(L_vis/2, zs, -halfBot),
+                            new THREE.Vector3(L_vis/2, zs, halfBot), new THREE.Vector3(-L_vis/2, zs, halfBot)
+                        ];
+                        const pTop = [
+                            new THREE.Vector3(-L_vis/2, ze, -halfTop), new THREE.Vector3(L_vis/2, ze, -halfTop),
+                            new THREE.Vector3(L_vis/2, ze, halfTop), new THREE.Vector3(-L_vis/2, ze, halfTop)
+                        ];
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[1], pTop[1], pTop[0], col, 0.18));
+                        meshGroup.add(createQuadMesh(pBot[3], pBot[2], pTop[2], pTop[3], col, 0.18));
+                        meshGroup.add(createQuadMesh(pBot[1], pBot[2], pTop[2], pTop[1], col, 0.28));
+                        meshGroup.add(createQuadMesh(pBot[0], pBot[3], pTop[3], pTop[0], col, 0.28));
                         prevHalfTop = halfTop;
                     }
                 }
             }
 
-            // Nóc trên cùng (0.0m) màu đỏ
-            meshGroup.add(createRingLine(zTotal, prevHalfTop, L_ref, 0xef4444));
+            // Nóc trên cùng (0.0m) màu đỏ nét đứt
+            meshGroup.add(createRingLine(zTotal * zScale, prevHalfTop, L_vis, 0xef4444));
 
-            // KHỐI CÁT 3D
+            // KHỐI CÁT 3D VÀNG ÓNG
             const sandMat = new THREE.MeshStandardMaterial({
                 color: 0xfde047,
-                roughness: 0.4,
+                roughness: 0.35,
                 metalness: 0.1,
                 transparent: true,
-                opacity: 0.85,
+                opacity: 0.88,
                 side: THREE.DoubleSide
             });
 
             const topHalfW = prevHalfTop * 0.95;
-            const nx = 35, ny = 20;
-            const geomSand = new THREE.PlaneGeometry(L_ref, topHalfW * 2, nx, ny);
+            const nx = 32, ny = 18;
+            const geomSand = new THREE.PlaneGeometry(L_vis, topHalfW * 2, nx, ny);
             geomSand.rotateX(-Math.PI / 2);
             const pos = geomSand.attributes.position;
 
             for (let i = 0; i < pos.count; i++) {
-                const px = pos.getX(i) + L_ref/2;
+                const px_vis = pos.getX(i) + L_vis/2;
+                const px_real = px_vis * (L_ref / L_vis);
                 const py = pos.getZ(i);
                 
                 let D_mat = 0.8;
                 if (mType === 1) D_mat = mParams.do_hut_cat || 0.8;
-                else if (mType === 2) D_mat = mParams.do_hut_dau + (mParams.do_hut_duoi - mParams.do_hut_dau) * (px / L_ref);
+                else if (mType === 2) D_mat = mParams.do_hut_dau + (mParams.do_hut_duoi - mParams.do_hut_dau) * (px_real / L_ref);
                 else if (mType === 3) {
                     const ax = mParams.dai_chan_non / 2.0, by = mParams.rong_chan_non / 2.0;
-                    const r = Math.sqrt(Math.pow((px - L_ref/2)/ax, 2) + Math.pow(py/by, 2));
+                    const r = Math.sqrt(Math.pow((px_real - L_ref/2)/ax, 2) + Math.pow(py/by, 2));
                     const cao = r <= 1.0 ? mParams.cao_non * (1.0 - r) : 0.0;
                     D_mat = mParams.do_hut_nen - cao;
                 } else if (mType === 4) {
                     const ax = mParams.dai_chan_num / 2.0, by = mParams.rong_chan_num / 2.0;
-                    const r2 = Math.pow((px - L_ref/2)/ax, 2) + Math.pow(py/by, 2);
+                    const r2 = Math.pow((px_real - L_ref/2)/ax, 2) + Math.pow(py/by, 2);
                     const cao = r2 <= 1.0 ? mParams.cao_num * (1.0 - r2) : 0.0;
                     D_mat = mParams.do_hut_nen - cao;
                 }
 
-                pos.setY(i, Math.max(zTotal - D_mat, 0));
+                pos.setY(i, Math.max(zTotal - D_mat, 0) * zScale);
             }
             geomSand.computeVertexNormals();
             const meshSand = new THREE.Mesh(geomSand, sandMat);
