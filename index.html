@@ -378,7 +378,7 @@
                             </label>
                             <span class="text-[9px] text-slate-400">Lưu tự động trên máy</span>
                         </div>
-                        <input id="inp_gas_url" type="url" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveGasUrl()" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500">
+                        <input id="inp_gas_url" type="url" value="https://script.google.com/macros/s/AKfycbyt6WgVw225Z63zKErwPzkoQo2DJgkww5h5jzru0bkNoAbBw6Go95_r07igtF5B8Bgr/exec" oninput="saveGasUrl()" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500">
                     </div>
 
                     <!-- NÚT GỬI LƯU GOOGLE SHEET -->
@@ -1628,7 +1628,7 @@
             renderFormFields();
             initSvgZoomPan();
 
-            const savedUrl = localStorage.getItem('sand_barge_gas_url');
+            const savedUrl = localStorage.getItem('sand_barge_gas_url') || 'https://script.google.com/macros/s/AKfycbyt6WgVw225Z63zKErwPzkoQo2DJgkww5h5jzru0bkNoAbBw6Go95_r07igtF5B8Bgr/exec';
             if (savedUrl) {
                 document.getElementById('inp_gas_url').value = savedUrl;
             }
