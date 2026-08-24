@@ -175,5 +175,4 @@ function testChayThu() {
   
   var lastRow = sheet.getLastRow();
   formatDataRow(sheet, lastRow);
-  Logger.log("ĐÃ GHI VÀ ĐỊNH DẠNG BẢNG TÍNH HOÀN HẢO!");
 }
