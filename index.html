@@ -11,7 +11,6 @@
     <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        /* Chống zoom giật trên iOS Safari khi focus input */
         input, select {
             font-size: 16px !important;
         }
@@ -35,7 +34,6 @@
         #threejs-canvas:active {
             cursor: grabbing;
         }
-        /* Mobile Top Tabs Styling */
         .mobile-tab-btn.active {
             background-color: #2563eb;
             color: #ffffff;
@@ -68,7 +66,7 @@
         </div>
     </header>
 
-    <!-- THANH CHUYỂN TAB TRÊN DI ĐỘNG (DỄ BẤM BẰNG 1 TAY) -->
+    <!-- THANH CHUYỂN TAB TRÊN DI ĐỘNG -->
     <div class="lg:hidden sticky top-[57px] z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-3 py-2 shadow-sm">
         <div class="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl">
             <button id="m_btn_form" onclick="switchMobileTab('form')" class="mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700">
@@ -246,7 +244,7 @@
         <!-- CỘT PHẢI: ĐỒ HỌA TRỰC QUAN 2D & 3D -->
         <section id="col_graphics" class="lg:col-span-7 flex flex-col gap-3">
 
-            <!-- DESKTOP 2-TAB SWITCHER BUTTONS (CHỈ HIỆN TRÊN MÀN HÌNH LỚN) -->
+            <!-- DESKTOP 2-TAB SWITCHER BUTTONS -->
             <div class="hidden lg:flex bg-white p-2 rounded-2xl shadow-sm border border-slate-200 items-center justify-between gap-2">
                 <div class="flex items-center gap-2 w-full">
                     <button id="d_btn_tab_2d" onclick="switchDesktopGraphicTab('2d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2">
@@ -263,14 +261,13 @@
                 <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <div class="flex justify-between items-center mb-2 px-1">
                         <span class="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                            <i class="fa-solid fa-shapes text-blue-600"></i> Mặt Cắt Ngang Tiết Diện
+                            <i class="fa-solid fa-shapes text-blue-600"></i> 1. Mặt Cắt Ngang Tiết Diện
                         </span>
                         <div class="flex items-center gap-1 text-[10px] text-slate-500 font-semibold">
                             <i class="fa-solid fa-hand-pointer text-blue-500"></i> Kéo để Pan • Lăn chuột Zoom
                         </div>
                     </div>
-                    <div class="w-full h-[320px] sm:h-[450px] bg-slate-900 rounded-2xl border border-slate-800 relative flex items-center justify-center p-2 shadow-inner overflow-hidden select-none">
-                        <!-- Nút Zoom 2D -->
+                    <div class="w-full h-[300px] sm:h-[420px] bg-slate-900 rounded-2xl border border-slate-800 relative flex items-center justify-center p-2 shadow-inner overflow-hidden select-none">
                         <div class="absolute top-2 right-2 z-10 flex items-center gap-1 bg-slate-800/80 backdrop-blur-sm p-1 rounded-xl border border-slate-700 shadow-md">
                             <button onclick="zoomSvgTransverse(1.25)" title="Phóng to" class="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded-lg text-xs font-bold transition">
                                 <i class="fa-solid fa-plus"></i>
@@ -288,9 +285,9 @@
 
                 <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <span class="text-[11px] font-bold text-slate-800 uppercase mb-1.5 flex items-center gap-1">
-                        <i class="fa-solid fa-arrows-split-up-and-left text-emerald-500"></i> Mặt Cắt Dọc Theo Chiều Dài Khoang
+                        <i class="fa-solid fa-arrows-split-up-and-left text-emerald-500"></i> 2. Hình Chiếu Cạnh (Mặt Cắt Dọc Theo Chiều Dài Khoang)
                     </span>
-                    <div class="w-full h-[150px] sm:h-[180px] bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center p-1">
+                    <div class="w-full h-[180px] sm:h-[220px] bg-slate-900 rounded-2xl border border-slate-800 flex items-center justify-center p-1 relative shadow-inner overflow-hidden">
                         <svg id="svg-long" viewBox="0 0 400 200" class="w-full h-full"></svg>
                     </div>
                 </div>
@@ -315,7 +312,7 @@
 
     </main>
 
-    <!-- STICKY BOTTOM RESULT BAR (GHIM ĐÁY MÀN HÌNH ĐIỆN THOẠI) -->
+    <!-- STICKY BOTTOM RESULT BAR -->
     <div id="sticky_result_bar" class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md text-white border-t border-slate-800 px-4 py-2.5 flex justify-between items-center shadow-2xl">
         <div class="flex items-center space-x-3 sm:space-x-6">
             <div>
@@ -346,19 +343,16 @@
 
         function applyPreset(type) {
             if (type === 1) {
-                // 2 Tầng đáy thang phổ biến
                 document.getElementById('sel_p1').value = "Đáy hộp hình thang";
                 document.getElementById('sel_p2').value = "Hình hộp thang";
                 document.getElementById('sel_p3').value = "Không có phần 3";
                 document.getElementById('sel_p4').value = "Không có phần 4";
             } else if (type === 2) {
-                // 3 Tầng đáy V + Cổ khoang chữ nhật
                 document.getElementById('sel_p1').value = "Đáy chữ V";
                 document.getElementById('sel_p2').value = "Hình hộp thang";
                 document.getElementById('sel_p3').value = "Hình hộp chữ nhật";
                 document.getElementById('sel_p4').value = "Không có phần 4";
             } else if (type === 3) {
-                // 1 Tầng đáy bằng
                 document.getElementById('sel_p1').value = "Đáy bằng";
                 document.getElementById('sel_p2').value = "Hình hộp chữ nhật";
                 document.getElementById('sel_p3').value = "Không có phần 3";
@@ -435,8 +429,8 @@
             if (mType === 1) {
                 hm += makeField('inp_do_hut_cat', 'Độ hụt mặt cát (m)', 0.8);
             } else if (mType === 2) {
-                hm += makeField('inp_do_hut_dau', 'Độ hụt tại ĐẦU (m)', 0.5);
-                hm += makeField('inp_do_hut_duoi', 'Độ hụt tại ĐUÔI (m)', 1.5);
+                hm += makeField('inp_do_hut_dau', 'Độ hụt tại ĐẦU MŨI (m)', 0.5);
+                hm += makeField('inp_do_hut_duoi', 'Độ hụt tại ĐUÔI LÁI (m)', 1.5);
             } else if (mType === 3) {
                 hm += makeField('inp_do_hut_nen', '1. Độ hụt nền (m)', 1.2);
                 hm += makeField('inp_cao_non', '2. Chiều cao nón (m)', 1.0);
@@ -630,12 +624,12 @@
 
             renderThreeJS(layers, zRanges, zTotal, mType, mParams);
             renderCADTransverse(layers, zRanges, zTotal, mType, mParams);
+            renderCADLongitudinal(layers, zRanges, zTotal, mType, mParams);
         }
 
-                function renderCADTransverse(layers, zRanges, zTotal, mType, mParams) {
+        function renderCADTransverse(layers, zRanges, zTotal, mType, mParams) {
             const svg = document.getElementById('svg-transverse');
-            const svgLong = document.getElementById('svg-long');
-            if (!svg || !svgLong) return;
+            if (!svg) return;
 
             const cX = 200;
             const baseY = 240;
@@ -648,7 +642,6 @@
             let textAnnotations = "";
             let prev_top_half = 0.0;
 
-            // Find max half width for layout
             let max_half_px = 0;
             for (let lay of layers) {
                 if (lay.B) max_half_px = Math.max(max_half_px, (lay.B / 2) * scaleX);
@@ -746,7 +739,6 @@
                 } else {
                     if (lay.type === "Hình hộp chữ nhật") {
                         const halfB = (lay.B / 2) * scaleX;
-                        // Sàn be ngang
                         if (Math.abs(halfB - prev_top_half) > 1) {
                             pathHull += `
                                 <line x1="${cX - prev_top_half}" y1="${yBot}" x2="${cX - halfB}" y2="${yBot}" stroke="#ffffff" stroke-width="2.4"/>
@@ -787,14 +779,12 @@
                     pathDims += makeDimV(yTop, yBot, cX - max_half_px, `H${k+1}`, -20);
                 }
 
-                // Đường phân tầng màu xanh
                 if (k > 0) {
                     pathHull += `
                         <line x1="${cX - prev_top_half}" y1="${yBot}" x2="${cX + prev_top_half}" y2="${yBot}" stroke="#3b82f6" stroke-width="1.8"/>
                     `;
                 }
 
-                // Ghi chú Phần 1, Phần 2, Phần 3 đặt ở cột xa bên phải (x = cX + max_half_px + 65)
                 const rightAnnotX = cX + max_half_px + 70;
                 textAnnotations += `
                     <line x1="${cX + prev_top_half + 4}" y1="${(yBot + yTop)/2}" x2="${rightAnnotX - 6}" y2="${(yBot + yTop)/2}" stroke="#38bdf8" stroke-dasharray="2,2" stroke-width="1.0"/>
@@ -802,7 +792,6 @@
                 `;
             }
 
-            // Nóc trên cùng (0.0m)
             const yTopRim = baseY - zTotal * scaleY;
             pathHull += `
                 <line x1="${cX - prev_top_half}" y1="${yTopRim}" x2="${cX + prev_top_half}" y2="${yTopRim}" stroke="#ffffff" stroke-width="2.8"/>
@@ -810,7 +799,6 @@
                 <text x="${cX}" y="${yTopRim - 24}" font-size="8.5" font-weight="bold" fill="#ef4444" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
             `;
 
-            // MẶT CÁT & ĐỘ HỤT (D)
             const D_mat = mParams.do_hut_cat || mParams.do_hut_nen || 0.8;
             const ySand = Math.min(yTopRim + D_mat * scaleY, baseY);
             if (D_mat < zTotal) {
@@ -832,14 +820,17 @@
                 ${pathDims}
                 ${textAnnotations}
             `;
+        }
 
-                        // 2. MẶT CẮT DỌC CẠNH (HÌNH CHIẾU CẠNH THEO CHIỀU DÀI KHOANG)
+        function renderCADLongitudinal(layers, zRanges, zTotal, mType, mParams) {
+            const svgLong = document.getElementById('svg-long');
+            if (!svgLong) return;
+
             const L_ref = layers[0].L;
-            const x0 = 40, x1 = 360;
-            const yRim = 40, yFloor = 160;
+            const x0 = 35, x1 = 365;
+            const yRim = 35, yFloor = 150;
             const wBox = x1 - x0, hBox = yFloor - yRim;
 
-            // Generate points along length for sand profile
             const nSample = 60;
             let ptsSand = [];
             let pathDimsLong = "";
@@ -851,22 +842,22 @@
 
                 let dMat = 0.8;
                 if (mType === 1) {
-                    dMat = mParams.do_hut_cat || 0.8;
+                    dMat = mParams.do_hut_cat !== undefined ? mParams.do_hut_cat : 0.8;
                 } else if (mType === 2) {
-                    const dHead = mParams.do_hut_dau || 0.5;
-                    const dTail = mParams.do_hut_duoi || 1.5;
+                    const dHead = mParams.do_hut_dau !== undefined ? mParams.do_hut_dau : 0.5;
+                    const dTail = mParams.do_hut_duoi !== undefined ? mParams.do_hut_duoi : 1.5;
                     dMat = dHead + (dTail - dHead) * frac;
                 } else if (mType === 3) {
-                    const dNen = mParams.do_hut_nen || 1.4;
-                    const hCone = mParams.cao_non || 1.0;
-                    const lenCone = mParams.dai_chan_non || 20.0;
+                    const dNen = mParams.do_hut_nen !== undefined ? mParams.do_hut_nen : 1.2;
+                    const hCone = mParams.cao_non !== undefined ? mParams.cao_non : 1.0;
+                    const lenCone = mParams.dai_chan_non || 16.0;
                     const a = lenCone / 2.0;
                     const r = Math.abs(px - L_ref / 2.0) / a;
                     const cao = r <= 1.0 ? hCone * (1.0 - r) : 0.0;
                     dMat = dNen - cao;
                 } else if (mType === 4) {
-                    const dNen = mParams.do_hut_nen || 1.4;
-                    const hDome = mParams.cao_num || 1.0;
+                    const dNen = mParams.do_hut_nen !== undefined ? mParams.do_hut_nen : 1.2;
+                    const hDome = mParams.cao_num !== undefined ? mParams.cao_num : 1.0;
                     const lenDome = mParams.dai_chan_num || 24.0;
                     const a = lenDome / 2.0;
                     const rSq = Math.pow((px - L_ref / 2.0) / a, 2);
@@ -875,7 +866,7 @@
                 }
 
                 const dClamped = Math.max(0, Math.min(dMat, zTotal));
-                const svgY = yRim + (dClamped / zTotal) * hBox;
+                const svgY = yRim + (dClamped / Math.max(zTotal, 1e-4)) * hBox;
                 ptsSand.push({ x: svgX, y: svgY });
             }
 
@@ -888,7 +879,6 @@
                 sandLinePath += `L ${ptsSand[i].x} ${ptsSand[i].y} `;
             }
 
-            // Dimension lines for Sand Profile in Long view
             if (mType === 1) {
                 const yS = ptsSand[0].y;
                 pathDimsLong += `
@@ -922,24 +912,18 @@
             }
 
             svgLong.innerHTML = `
-                <!-- Khung vỏ cạnh xà lan -->
                 <rect x="${x0}" y="${yRim}" width="${wBox}" height="${hBox}" fill="#0f172a" stroke="#ffffff" stroke-width="2.5"/>
-                
-                <!-- Mốc mép trên -->
                 <line x1="${x0 - 20}" y1="${yRim}" x2="${x1 + 20}" y2="${yRim}" stroke="#dc2626" stroke-dasharray="4,4" stroke-width="1.3"/>
-                <text x="200" y="${yRim - 12}" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
+                <text x="200" y="${yRim - 10}" font-size="8.5" font-weight="bold" fill="#dc2626" text-anchor="middle">MỐC MÉP TRÊN (0.0m)</text>
                 
-                <!-- Khối cát vàng óng theo hình dạng thực tế -->
                 <path d="${polySandPath}" fill="#fde047" fill-opacity="0.85"/>
                 <path d="${sandLinePath}" fill="none" stroke="#d97706" stroke-width="2.0"/>
                 
                 <text x="200" y="${(yRim + yFloor)/2}" font-size="8.5" font-weight="bold" fill="#78350f" text-anchor="middle">MẶT CÁT</text>
                 
-                <!-- Ký hiệu Đầu - Đuôi -->
                 <text x="${x0 + 6}" y="${yFloor - 6}" font-size="8" font-weight="bold" fill="#94a3b8">ĐẦU MŨI</text>
                 <text x="${x1 - 6}" y="${yFloor - 6}" font-size="8" font-weight="bold" fill="#94a3b8" text-anchor="end">ĐUÔI LÁI</text>
 
-                <!-- Kích thước chiều dài L -->
                 <line x1="${x0}" y1="${yFloor + 18}" x2="${x1}" y2="${yFloor + 18}" stroke="#0284c7" stroke-width="1.2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
                 <text x="200" y="${yFloor + 30}" font-size="8.5" font-weight="bold" fill="#0284c7" text-anchor="middle">Chiều dài khoang (L)</text>
                 
@@ -1205,10 +1189,8 @@
                 }
             }
 
-            // Nóc trên cùng màu đỏ nét đứt
             meshGroup.add(createRingLine(zTotal * zScale, prevHalfTop, L_vis, 0xef4444));
 
-            // KHỐI CÁT 3D
             const sandMat = new THREE.MeshStandardMaterial({
                 color: 0xfde047,
                 roughness: 0.35,
@@ -1251,9 +1233,6 @@
             meshGroup.add(meshSand);
         }
 
-        // ==============================================================================
-        // MOBILE TAB SWITCHER LOGIC (Form / 2D / 3D)
-        // ==============================================================================
         function switchMobileTab(mode) {
             const colForm = document.getElementById('col_form');
             const colGraphics = document.getElementById('col_graphics');
@@ -1288,7 +1267,6 @@
             }
         }
 
-        // DESKTOP TAB SWITCHER
         function switchDesktopGraphicTab(tab) {
             const p2d = document.getElementById('panel_2d');
             const p3d = document.getElementById('panel_3d');
@@ -1321,7 +1299,6 @@
             });
         }
 
-        // Interactive SVG Zoom & Pan Logic
         let svgViewBox = { x: 0, y: 0, w: 460, h: 280 };
         const defaultViewBox = { x: 0, y: 0, w: 460, h: 280 };
         let isPanningSvg = false;
@@ -1409,7 +1386,6 @@
             renderFormFields();
             initSvgZoomPan();
 
-            // Check screen width for initial layout
             if (window.innerWidth < 1024) {
                 switchMobileTab('form');
             }
