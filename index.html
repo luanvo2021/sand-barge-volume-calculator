@@ -314,7 +314,7 @@
                 </div>
             </div>
 
-            <!-- PANEL 3: 📷 CHỤP ẢNH & LƯU GOOGLE SHEET -->
+                        <!-- PANEL 3: 📷 CHỤP ẢNH & LƯU GOOGLE SHEET -->
             <div id="panel_sheet" class="hidden flex-col gap-3">
                 <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -370,8 +370,18 @@
                         <span id="img_size_badge" class="absolute bottom-2 left-2 bg-slate-950/80 text-emerald-400 font-mono text-[10px] px-2 py-0.5 rounded-md border border-slate-700">Đã nén ~180 KB</span>
                     </div>
 
-                    <!-- CẤU HÌNH WEBHOOK GOOGLE SCRIPT (ẨN) -->
+                    <!-- ĐƯỜNG DẪN WEB APP GOOGLE SCRIPT ĐÃ ĐƯỢC ẨN VÀO MÃ NGUỒN -->
                     <input id="inp_gas_url" type="hidden" value="https://script.google.com/macros/s/AKfycbyt6WgVw225Z63zKErwPzkoQo2DJgkww5h5jzru0bkNoAbBw6Go95_r07igtF5B8Bgr/exec">
+
+                    <!-- NÚT LƯU GOOGLE SHEET TO RÕ -->
+                    <button id="btn_send_sheet" onclick="guiLenGoogleSheet()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition cursor-pointer">
+                        <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                        <span>Lưu Vào Google Sheet Ngay</span>
+                    </button>
+
+                    <!-- KHUNG BÁO KẾT QUẢ GỬI THÀNH CÔNG -->
+                    <div id="sheet_status_box" class="hidden p-3 rounded-xl text-xs font-bold"></div>
+                </div>
             </div>
 
         </section>
