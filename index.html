@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tính Thể Tích Cát Xà Lan V2 - Di Động & AutoCAD</title>
+    <title>Tính Thể Tích Cát Xà Lan V2 - Di Động & Google Sheets</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome 6 CDN -->
@@ -11,11 +11,11 @@
     <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        input, select {
+        input, select, textarea {
             font-size: 16px !important;
         }
         @media (min-width: 640px) {
-            input, select {
+            input, select, textarea {
                 font-size: 13px !important;
             }
         }
@@ -54,9 +54,9 @@
                 <div>
                     <h1 class="text-sm sm:text-base font-black tracking-tight leading-tight flex items-center gap-1.5">
                         TÍNH CÁT XÀ LAN V2
-                        <span class="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.2 rounded-full hidden sm:inline">PRO</span>
+                        <span class="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full hidden sm:inline">SHEETS SYNC</span>
                     </h1>
-                    <p class="text-[10px] sm:text-xs text-blue-300">Đa Tầng AutoCAD • 3D Xoay 360° • Chuẩn Nghiệm Thu</p>
+                    <p class="text-[10px] sm:text-xs text-blue-300">AutoCAD 2D • 3D Xoay • Chụp Ảnh Đồng Bộ Google Sheet</p>
                 </div>
             </div>
             <button onclick="saoChepKetQua()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-md transition flex items-center gap-1.5">
@@ -66,17 +66,20 @@
         </div>
     </header>
 
-    <!-- THANH CHUYỂN TAB TRÊN DI ĐỘNG -->
-    <div class="lg:hidden sticky top-[57px] z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-3 py-2 shadow-sm">
-        <div class="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl">
-            <button id="m_btn_form" onclick="switchMobileTab('form')" class="mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700">
-                <i class="fa-solid fa-pen-to-square"></i> 1. Nhập Số
+    <!-- THANH CHUYỂN TAB TRÊN DI ĐỘNG (4 TAB) -->
+    <div class="lg:hidden sticky top-[57px] z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-2 py-2 shadow-sm">
+        <div class="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-xl">
+            <button id="m_btn_form" onclick="switchMobileTab('form')" class="mobile-tab-btn active py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-700">
+                <i class="fa-solid fa-pen-to-square"></i> <span>1. Nhập</span>
             </button>
-            <button id="m_btn_2d" onclick="switchMobileTab('2d')" class="mobile-tab-btn py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700">
-                <i class="fa-solid fa-shapes"></i> 2. Bản Vẽ 2D
+            <button id="m_btn_2d" onclick="switchMobileTab('2d')" class="mobile-tab-btn py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-700">
+                <i class="fa-solid fa-shapes"></i> <span>2. Vẽ 2D</span>
             </button>
-            <button id="m_btn_3d" onclick="switchMobileTab('3d')" class="mobile-tab-btn py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700">
-                <i class="fa-solid fa-cube text-amber-500"></i> 3. Khối 3D
+            <button id="m_btn_3d" onclick="switchMobileTab('3d')" class="mobile-tab-btn py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-700">
+                <i class="fa-solid fa-cube text-amber-500"></i> <span>3. Khối 3D</span>
+            </button>
+            <button id="m_btn_sheet" onclick="switchMobileTab('sheet')" class="mobile-tab-btn py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-700">
+                <i class="fa-solid fa-camera text-emerald-500"></i> <span>4. Chụp Lưu</span>
             </button>
         </div>
     </div>
@@ -241,17 +244,20 @@
 
         </section>
 
-        <!-- CỘT PHẢI: ĐỒ HỌA TRỰC QUAN 2D & 3D -->
+        <!-- CỘT PHẢI: ĐỒ HỌA TRỰC QUAN 2D, 3D & TAB CHỤP LƯU GOOGLE SHEET -->
         <section id="col_graphics" class="lg:col-span-7 flex flex-col gap-3">
 
-            <!-- DESKTOP 2-TAB SWITCHER BUTTONS -->
+            <!-- DESKTOP 3-TAB SWITCHER BUTTONS -->
             <div class="hidden lg:flex bg-white p-2 rounded-2xl shadow-sm border border-slate-200 items-center justify-between gap-2">
                 <div class="flex items-center gap-2 w-full">
-                    <button id="d_btn_tab_2d" onclick="switchDesktopGraphicTab('2d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-shapes"></i> 📐 1. Bản Vẽ 2D Khổ Lớn (Zoom & Pan)
+                    <button id="d_btn_tab_2d" onclick="switchDesktopGraphicTab('2d')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-shapes"></i> 📐 Bản Vẽ 2D
                     </button>
-                    <button id="d_btn_tab_3d" onclick="switchDesktopGraphicTab('3d')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-cube text-amber-500"></i> 🌐 2. Mô Hình 3D Toàn Khung (Xoay 360°)
+                    <button id="d_btn_tab_3d" onclick="switchDesktopGraphicTab('3d')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-cube text-amber-500"></i> 🌐 Khối 3D
+                    </button>
+                    <button id="d_btn_tab_sheet" onclick="switchDesktopGraphicTab('sheet')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-camera text-emerald-500"></i> 📷 Chụp & Lưu Sheet
                     </button>
                 </div>
             </div>
@@ -267,7 +273,7 @@
                             <i class="fa-solid fa-hand-pointer text-blue-500"></i> Kéo để Pan • Lăn chuột Zoom
                         </div>
                     </div>
-                    <div class="w-full h-[300px] sm:h-[420px] bg-slate-900 rounded-2xl border border-slate-800 relative flex items-center justify-center p-2 shadow-inner overflow-hidden select-none">
+                    <div class="w-full h-[280px] sm:h-[380px] bg-slate-900 rounded-2xl border border-slate-800 relative flex items-center justify-center p-2 shadow-inner overflow-hidden select-none">
                         <div class="absolute top-2 right-2 z-10 flex items-center gap-1 bg-slate-800/80 backdrop-blur-sm p-1 rounded-xl border border-slate-700 shadow-md">
                             <button onclick="zoomSvgTransverse(1.25)" title="Phóng to" class="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded-lg text-xs font-bold transition">
                                 <i class="fa-solid fa-plus"></i>
@@ -308,6 +314,84 @@
                 </div>
             </div>
 
+            <!-- PANEL 3: 📷 CHỤP ẢNH & LƯU GOOGLE SHEET -->
+            <div id="panel_sheet" class="hidden flex-col gap-3">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center text-base font-bold">
+                                <i class="fa-solid fa-camera"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xs sm:text-sm font-bold text-slate-800">Chụp Ảnh & Lưu Google Sheet</h3>
+                                <p class="text-[10px] text-slate-400">Tự động đẩy số liệu + ảnh hiện trường về bảng tính</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">REALTIME</span>
+                    </div>
+
+                    <!-- Ô NHẬP MÃ TÀU & GHI CHÚ -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-700 block mb-1">Mã Số / Tên Xà Lan (*):</label>
+                            <input id="inp_barge_code" type="text" placeholder="VD: SG-8899 hoặc LA-0234" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 uppercase">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-700 block mb-1">Ghi Chú Nghiệm Thu:</label>
+                            <input id="inp_barge_note" type="text" placeholder="VD: Bến Cát Lái, Cát vàng loại 1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+
+                    <!-- KHU VỰC CHỤP ẢNH TỪ CAMERA -->
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-700 block mb-1.5">Ảnh chụp hiện trường mớn nước / khoang cát:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <!-- NÚT CHỤP BẰNG CAMERA -->
+                            <label class="flex items-center justify-center gap-2 py-3 px-4 bg-blue-50 border-2 border-dashed border-blue-300 hover:bg-blue-100 text-blue-700 rounded-xl font-bold text-xs cursor-pointer active:scale-95 transition">
+                                <i class="fa-solid fa-camera text-base"></i>
+                                <span>Bật Camera Chụp</span>
+                                <input type="file" accept="image/*" capture="environment" onchange="xuLyChupAnh(event)" class="hidden">
+                            </label>
+                            <!-- NÚT CHỌN ẢNH CÓ SẴN -->
+                            <label class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-50 border-2 border-dashed border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl font-bold text-xs cursor-pointer active:scale-95 transition">
+                                <i class="fa-solid fa-image text-base text-slate-500"></i>
+                                <span>Chọn Từ Thư Viện</span>
+                                <input type="file" accept="image/*" onchange="xuLyChupAnh(event)" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- KHUNG PREVIEW ẢNH ĐÃ CHỤP -->
+                    <div id="preview_img_box" class="hidden relative w-full h-52 bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                        <img id="preview_img" src="" alt="Ảnh hiện trường" class="w-full h-full object-contain">
+                        <button onclick="xoaAnhChup()" class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-md">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <span id="img_size_badge" class="absolute bottom-2 left-2 bg-slate-950/80 text-emerald-400 font-mono text-[10px] px-2 py-0.5 rounded-md border border-slate-700">Đã nén ~180 KB</span>
+                    </div>
+
+                    <!-- CẤU HÌNH WEBHOOK GOOGLE SCRIPT -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                <i class="fa-brands fa-google text-emerald-600"></i> Đường Dẫn Web App Google Script:
+                            </label>
+                            <span class="text-[9px] text-slate-400">Lưu tự động trên máy</span>
+                        </div>
+                        <input id="inp_gas_url" type="url" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveGasUrl()" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <!-- NÚT GỬI LƯU GOOGLE SHEET -->
+                    <button id="btn_send_sheet" onclick="guiLenGoogleSheet()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                        <span>Lưu Vào Google Sheet Ngay</span>
+                    </button>
+
+                    <!-- KHUNG BÁO KẾT QUẢ GỬI THÀNH CÔNG -->
+                    <div id="sheet_status_box" class="hidden p-3 rounded-xl text-xs font-bold"></div>
+                </div>
+            </div>
+
         </section>
 
     </main>
@@ -332,6 +416,8 @@
     </div>
 
     <script>
+        let base64PhotoData = "";
+
         function makeField(id, label, defVal) {
             return `
                 <div>
@@ -451,6 +537,9 @@
             const el = document.getElementById(id);
             return el ? parseFloat(el.value) || 0 : 0;
         }
+
+        let currentCalculatedVolume = 0;
+        let currentCalculatedMass = 0;
 
         function tinhToan() {
             const layers = [];
@@ -612,6 +701,9 @@
 
             const rho = getVal('inp_rho') || 1.65;
             const totalMass = totalVolume * rho;
+
+            currentCalculatedVolume = totalVolume;
+            currentCalculatedMass = totalMass;
 
             const strVol = totalVolume.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3});
             const strMass = totalMass.toLocaleString('en-US', {minimumFractionDigits: 3, maximumFractionDigits: 3});
@@ -1233,57 +1325,207 @@
             meshGroup.add(meshSand);
         }
 
+        // ==============================================================================
+        // TAB SWITCHING (MOBILE & DESKTOP)
+        // ==============================================================================
         function switchMobileTab(mode) {
             const colForm = document.getElementById('col_form');
             const colGraphics = document.getElementById('col_graphics');
             const panel2D = document.getElementById('panel_2d');
             const panel3D = document.getElementById('panel_3d');
+            const panelSheet = document.getElementById('panel_sheet');
 
             const btnForm = document.getElementById('m_btn_form');
             const btn2D = document.getElementById('m_btn_2d');
             const btn3D = document.getElementById('m_btn_3d');
+            const btnSheet = document.getElementById('m_btn_sheet');
 
-            [btnForm, btn2D, btn3D].forEach(b => {
-                if(b) b.className = "mobile-tab-btn py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-slate-700 font-semibold";
+            [btnForm, btn2D, btn3D, btnSheet].forEach(b => {
+                if(b) b.className = "mobile-tab-btn py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-700 font-semibold";
             });
 
             if (mode === 'form') {
                 colForm.classList.remove('hidden');
                 colGraphics.classList.add('hidden');
-                btnForm.className = "mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-white font-bold";
+                btnForm.className = "mobile-tab-btn active py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-white font-bold";
             } else if (mode === '2d') {
                 colForm.classList.add('hidden');
                 colGraphics.classList.remove('hidden');
                 panel2D.classList.remove('hidden');
                 panel3D.classList.add('hidden');
-                btn2D.className = "mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-white font-bold";
+                panelSheet.classList.add('hidden');
+                btn2D.className = "mobile-tab-btn active py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-white font-bold";
             } else if (mode === '3d') {
                 colForm.classList.add('hidden');
                 colGraphics.classList.remove('hidden');
                 panel2D.classList.add('hidden');
                 panel3D.classList.remove('hidden');
-                btn3D.className = "mobile-tab-btn active py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-white font-bold";
+                panelSheet.classList.add('hidden');
+                btn3D.className = "mobile-tab-btn active py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-white font-bold";
                 setTimeout(resize3D, 50);
+            } else if (mode === 'sheet') {
+                colForm.classList.add('hidden');
+                colGraphics.classList.remove('hidden');
+                panel2D.classList.add('hidden');
+                panel3D.classList.add('hidden');
+                panelSheet.classList.remove('hidden');
+                btnSheet.className = "mobile-tab-btn active py-2 rounded-lg text-[11px] transition flex flex-col sm:flex-row items-center justify-center gap-1 text-white font-bold";
             }
         }
 
         function switchDesktopGraphicTab(tab) {
             const p2d = document.getElementById('panel_2d');
             const p3d = document.getElementById('panel_3d');
+            const psheet = document.getElementById('panel_sheet');
             const b2d = document.getElementById('d_btn_tab_2d');
             const b3d = document.getElementById('d_btn_tab_3d');
+            const bsheet = document.getElementById('d_btn_tab_sheet');
+
+            [p2d, p3d, psheet].forEach(p => p.classList.add('hidden'));
+            [b2d, b3d, bsheet].forEach(b => {
+                b.className = "flex-1 py-2 px-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-1.5";
+            });
 
             if (tab === '2d') {
                 p2d.classList.remove('hidden');
-                p3d.classList.add('hidden');
-                b2d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2";
-                b3d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2";
+                b2d.className = "flex-1 py-2 px-3 rounded-xl font-bold text-xs bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-1.5";
             } else if (tab === '3d') {
                 p3d.classList.remove('hidden');
-                p2d.classList.add('hidden');
-                b3d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-2";
-                b2d.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2";
+                b3d.className = "flex-1 py-2 px-3 rounded-xl font-bold text-xs bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-1.5";
                 setTimeout(resize3D, 50);
+            } else if (tab === 'sheet') {
+                psheet.classList.remove('hidden');
+                bsheet.className = "flex-1 py-2 px-3 rounded-xl font-bold text-xs bg-emerald-600 text-white shadow-sm transition flex items-center justify-center gap-1.5";
+            }
+        }
+
+        // ==============================================================================
+        // CAMERA CAPTURE & COMPRESSION ENGINE
+        // ==============================================================================
+        function xuLyChupAnh(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Compress image using canvas
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const maxDim = 1200;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    // Add timestamp watermark
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString('vi-VN') + " " + now.toLocaleTimeString('vi-VN');
+                    ctx.fillStyle = "rgba(0,0,0,0.65)";
+                    ctx.fillRect(0, h - 35, w, 35);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "bold 16px sans-serif";
+                    ctx.fillText(`MÃ: ${document.getElementById('inp_barge_code').value || 'XÀ LAN'} | ${dateStr}`, 15, h - 11);
+
+                    base64PhotoData = canvas.toDataURL('image/jpeg', 0.72);
+                    
+                    document.getElementById('preview_img').src = base64PhotoData;
+                    document.getElementById('preview_img_box').classList.remove('hidden');
+                    
+                    const kbSize = Math.round((base64PhotoData.length * 3 / 4) / 1024);
+                    document.getElementById('img_size_badge').innerText = `Đã nén ~${kbSize} KB`;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function xoaAnhChup() {
+            base64PhotoData = "";
+            document.getElementById('preview_img').src = "";
+            document.getElementById('preview_img_box').classList.add('hidden');
+        }
+
+        function saveGasUrl() {
+            const url = document.getElementById('inp_gas_url').value.trim();
+            localStorage.setItem('sand_barge_gas_url', url);
+        }
+
+        async function guiLenGoogleSheet() {
+            const gasUrl = document.getElementById('inp_gas_url').value.trim();
+            const bargeCode = document.getElementById('inp_barge_code').value.trim();
+            const note = document.getElementById('inp_barge_note').value.trim();
+            const statusBox = document.getElementById('sheet_status_box');
+            const btn = document.getElementById('btn_send_sheet');
+
+            if (!gasUrl) {
+                alert("Vui lòng dán đường dẫn Web App Google Apps Script vào ô cấu hình bên dưới trước!");
+                return;
+            }
+
+            if (!bargeCode) {
+                alert("Vui lòng nhập Mã Số / Tên Xà Lan để nhận diện!");
+                document.getElementById('inp_barge_code').focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-base"></i> <span>Đang nén ảnh và gửi lên Google Sheet...</span>`;
+            statusBox.classList.add('hidden');
+
+            const now = new Date();
+            const payload = {
+                timestamp: now.toLocaleDateString('vi-VN') + " " + now.toLocaleTimeString('vi-VN'),
+                barge_id: bargeCode,
+                volume: parseFloat(currentCalculatedVolume.toFixed(3)),
+                mass: parseFloat(currentCalculatedMass.toFixed(3)),
+                note: note,
+                image_base64: base64PhotoData
+            };
+
+            try {
+                // Post to Google Apps Script Web App
+                const response = await fetch(gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', // Google Apps Script redirects require no-cors for simple browser POST
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                statusBox.className = "p-3.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 flex flex-col gap-1";
+                statusBox.innerHTML = `
+                    <div class="flex items-center gap-1.5 text-emerald-800">
+                        <i class="fa-solid fa-circle-check text-base text-emerald-600"></i>
+                        <span>ĐÃ GỬI THÀNH CÔNG VÀO GOOGLE SHEET!</span>
+                    </div>
+                    <div class="text-[11px] font-normal text-emerald-700 pl-5">
+                        Xà lan: <b>${bargeCode}</b> | Thể tích: <b>${payload.volume} m³</b> | Khối lượng: <b>${payload.mass} tấn</b>
+                    </div>
+                `;
+                statusBox.classList.remove('hidden');
+
+                // Clear photo and code for next inspection
+                xoaAnhChup();
+                document.getElementById('inp_barge_code').value = "";
+                document.getElementById('inp_barge_note').value = "";
+
+            } catch (err) {
+                statusBox.className = "p-3 rounded-xl text-xs font-bold bg-red-100 text-red-900 border border-red-300";
+                statusBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1 text-red-600"></i> Lỗi gửi dữ liệu: ${err.message}`;
+                statusBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-base"></i> <span>Lưu Vào Google Sheet Ngay</span>`;
             }
         }
 
@@ -1385,6 +1627,11 @@
             initThreeJS();
             renderFormFields();
             initSvgZoomPan();
+
+            const savedUrl = localStorage.getItem('sand_barge_gas_url');
+            if (savedUrl) {
+                document.getElementById('inp_gas_url').value = savedUrl;
+            }
 
             if (window.innerWidth < 1024) {
                 switchMobileTab('form');
