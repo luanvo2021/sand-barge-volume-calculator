@@ -8,768 +8,938 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import matplotlib.patches as patches
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+KHOI_LUONG_RIENG_MAC_DINH = 1.65
 
-# ============================================================
-# PHẦN MỀM TÍNH THỂ TÍCH CÁT TRÊN XÀ LAN BẰNG TÍCH PHÂN 2D
-# ============================================================
+class LayerGeometry:
+    def __init__(self, name, layer_type, params):
+        self.name = name
+        self.layer_type = layer_type
+        self.params = params
 
-KHOI_LUONG_RIENG_MAC_DINH = 1.65  # tấn/m3
-
-
-class MoHinhTheTichCat:
-    def __init__(self, chieu_dai, chieu_rong, loai_day, thong_so_day, loai_mat, thong_so_mat):
-        self.chieu_dai = chieu_dai
-        self.chieu_rong = chieu_rong
-        self.loai_day = loai_day
-        self.thong_so_day = thong_so_day
+class MultiTierBargeModel:
+    def __init__(self, layers, loai_mat, thong_so_mat):
+        self.layers = layers
         self.loai_mat = loai_mat
         self.thong_so_mat = thong_so_mat
+        self._build_vertical_coordinates()
 
-    def do_sau_day(self, x, y):
-        if self.loai_day == "Đáy bằng":
-            return self.thong_so_day["sau_day"]
+    def _build_vertical_coordinates(self):
+        z_curr = 0.0
+        self.layer_z_ranges = []
+        for lay in self.layers:
+            h = lay.params.get("H", 0.6)
+            z_next = z_curr + h
+            self.layer_z_ranges.append((z_curr, z_next, h))
+            z_curr = z_next
+        self.total_height = z_curr
 
-        if self.loai_day == "Đáy chữ V":
-            sau_man = self.thong_so_day["sau_man"]
-            canh_nghieng_V = self.thong_so_day["canh_nghieng_V"]
-            nua_rong = self.chieu_rong / 2.0
-            do_ha_sau_V = math.sqrt(max(canh_nghieng_V**2 - nua_rong**2, 0.0))
-            return sau_man + do_ha_sau_V * (1.0 - 2.0 * abs(y) / self.chieu_rong)
-
-        raise ValueError("Loại đáy xà lan không hợp lệ.")
-
-    def do_sau_mat_cat(self, x, y):
+    def do_sau_mat_cat(self, x, y, L_ref):
         p = self.thong_so_mat
-
-        # TRƯỜNG HỢP 1: Bề mặt phẳng
         if self.loai_mat == 1:
             return p["do_hut_cat"]
+        elif self.loai_mat == 2:
+            return p["do_hut_dau"] + (p["do_hut_duoi"] - p["do_hut_dau"]) * (x / L_ref)
+        elif self.loai_mat == 3:
+            tam_x = L_ref / 2.0
+            a = p["dai_chan_non"] / 2.0
+            b = p["rong_chan_non"] / 2.0
+            r = math.sqrt(((x - tam_x)/a)**2 + (y/b)**2)
+            cao = p["cao_non"] * (1.0 - r) if r <= 1.0 else 0.0
+            return p["do_hut_nen"] - cao
+        elif self.loai_mat == 4:
+            tam_x = L_ref / 2.0
+            a = p["dai_chan_num"] / 2.0
+            b = p["rong_chan_num"] / 2.0
+            r_sq = ((x - tam_x)/a)**2 + (y/b)**2
+            cao = p["cao_num"] * max(1.0 - r_sq, 0.0)
+            return p["do_hut_nen"] - cao
+        return 0.0
 
-        # TRƯỜNG HỢP 2: Dốc nghiêng từ Đầu đến Đuôi
-        if self.loai_mat == 2:
-            hut_dau = p["do_hut_dau"]
-            hut_duoi = p["do_hut_duoi"]
-            return hut_dau + (hut_duoi - hut_dau) * (x / self.chieu_dai)
-
-        # TRƯỜNG HỢP 3: Hình NÓN
-        if self.loai_mat == 3:
-            hut_nen = p["do_hut_nen"]
-            cao_non = p["cao_non"]
-            dai_chan_non = p["dai_chan_non"]
-            rong_chan_non = p["rong_chan_non"]
-
-            tam_x = self.chieu_dai / 2.0
-            tam_y = 0.0
-
-            ban_truc_a = dai_chan_non / 2.0
-            ban_truc_b = rong_chan_non / 2.0
-
-            he_so_x = (x - tam_x) / ban_truc_a
-            he_so_y = (y - tam_y) / ban_truc_b
-            ban_kinh_r = math.sqrt(he_so_x**2 + he_so_y**2)
-
-            if ban_kinh_r <= 1.0:
-                chieu_cao_non = cao_non * (1.0 - ban_kinh_r)
-            else:
-                chieu_cao_non = 0.0
-
-            return hut_nen - chieu_cao_non
-
-        # TRƯỜNG HỢP 4: Vòm NIPPLE
-        if self.loai_mat == 4:
-            hut_nen = p["do_hut_nen"]
-            cao_num = p["cao_num"]
-            dai_chan_num = p["dai_chan_num"]
-            rong_chan_num = p["rong_chan_num"]
-
-            tam_x = self.chieu_dai / 2.0
-            tam_y = 0.0
-
-            ban_truc_a = dai_chan_num / 2.0
-            ban_truc_b = rong_chan_num / 2.0
-
-            he_so_x = (x - tam_x) / ban_truc_a
-            he_so_y = (y - tam_y) / ban_truc_b
-            he_so_tong = he_so_x**2 + he_so_y**2
-
-            chieu_cao_num = cao_num * max(1.0 - he_so_tong, 0.0)
-            return hut_nen - chieu_cao_num
-
-        raise ValueError("Dạng bề mặt cát không hợp lệ.")
-
-    def chieu_day_cat(self, x, y):
-        sau_day = self.do_sau_day(x, y)
-        sau_mat = self.do_sau_mat_cat(x, y)
-        return max(sau_day - sau_mat, 0.0)
-
-    def tinh_the_tich(self, so_bac=64):
-        pts, wts = np.polynomial.legendre.leggauss(so_bac)
+    def tinh_the_tich_tang(self, layer_idx, n=48):
+        lay = self.layers[layer_idx]
+        z_start, z_end, H_layer = self.layer_z_ranges[layer_idx]
+        L = lay.params.get("L", 60.0)
+        z_total = self.total_height
         
-        # Phân rã 4 góc phần tư để loại trừ hoàn toàn điểm kỳ dị góc nhọn đáy chữ V & mép chân nón
-        x_domains = [(0.0, 0.5 * self.chieu_dai), (0.5 * self.chieu_dai, self.chieu_dai)]
-        y_domains = [(-0.5 * self.chieu_rong, 0.0), (0.0, 0.5 * self.chieu_rong)]
+        pts, wts = np.polynomial.legendre.leggauss(n)
+        x_subdomains = [(0.0, 0.5 * L), (0.5 * L, L)]
         
-        the_tich = 0.0
-        for x_start, x_end in x_domains:
-            x_mid = 0.5 * (x_start + x_end)
-            x_half = 0.5 * (x_end - x_start)
-            
-            for y_start, y_end in y_domains:
-                y_mid = 0.5 * (y_start + y_end)
-                y_half = 0.5 * (y_end - y_start)
-                
-                for i in range(so_bac):
-                    xi = x_mid + x_half * pts[i]
-                    wi = x_half * wts[i]
-                    
-                    for j in range(so_bac):
-                        yj = y_mid + y_half * pts[j]
-                        wj = y_half * wts[j]
-                        the_tich += wi * wj * self.chieu_day_cat(float(xi), float(yj))
-                        
-        return float(the_tich)
+        if lay.name == "Phần 1":
+            if lay.layer_type == "Đáy bằng":
+                B = lay.params.get("B", 12.0)
+                y_subdomains = [(-0.5 * B, 0.0), (0.0, 0.5 * B)]
+                vol = 0.0
+                for xs, xe in x_subdomains:
+                    x_mid, x_half = 0.5*(xs+xe), 0.5*(xe-xs)
+                    for ys, ye in y_subdomains:
+                        y_mid, y_half = 0.5*(ys+ye), 0.5*(ye-ys)
+                        for i in range(n):
+                            xi = x_mid + x_half * pts[i]
+                            wi = x_half * wts[i]
+                            for j in range(n):
+                                yj = y_mid + y_half * pts[j]
+                                wj = y_half * wts[j]
+                                D_mat_xy = self.do_sau_mat_cat(xi, yj, L)
+                                Z_sand = z_total - D_mat_xy
+                                h_in_layer = max(min(Z_sand - z_start, H_layer), 0.0)
+                                vol += wi * wj * h_in_layer
+                return vol
+
+            elif lay.layer_type == "Đáy chữ V":
+                B = lay.params.get("B", 12.0)
+                y_subdomains = [(-0.5 * B, 0.0), (0.0, 0.5 * B)]
+                vol = 0.0
+                for xs, xe in x_subdomains:
+                    x_mid, x_half = 0.5*(xs+xe), 0.5*(xe-xs)
+                    for ys, ye in y_subdomains:
+                        y_mid, y_half = 0.5*(ys+ye), 0.5*(ye-ys)
+                        for i in range(n):
+                            xi = x_mid + x_half * pts[i]
+                            wi = x_half * wts[i]
+                            for j in range(n):
+                                yj = y_mid + y_half * pts[j]
+                                wj = y_half * wts[j]
+                                D_mat_xy = self.do_sau_mat_cat(xi, yj, L)
+                                Z_sand = z_total - D_mat_xy
+                                Z_floor = z_start + H_layer * (2.0 * abs(yj) / B)
+                                h_in_layer = max(min(Z_sand - Z_floor, z_end - Z_floor), 0.0)
+                                vol += wi * wj * h_in_layer
+                return vol
+
+            elif lay.layer_type == "Đáy hộp hình thang":
+                B_top = lay.params.get("B_top", 12.0)
+                B_bot = lay.params.get("B_bot", 7.5)
+                y_subdomains = [
+                    (-0.5 * B_top, -0.5 * B_bot),
+                    (-0.5 * B_bot, 0.0),
+                    (0.0, 0.5 * B_bot),
+                    (0.5 * B_bot, 0.5 * B_top)
+                ]
+                vol = 0.0
+                for xs, xe in x_subdomains:
+                    x_mid, x_half = 0.5*(xs+xe), 0.5*(xe-xs)
+                    for ys, ye in y_subdomains:
+                        y_mid, y_half = 0.5*(ys+ye), 0.5*(ye-ys)
+                        for i in range(n):
+                            xi = x_mid + x_half * pts[i]
+                            wi = x_half * wts[i]
+                            for j in range(n):
+                                yj = y_mid + y_half * pts[j]
+                                wj = y_half * wts[j]
+                                D_mat_xy = self.do_sau_mat_cat(xi, yj, L)
+                                Z_sand = z_total - D_mat_xy
+                                abs_y = abs(yj)
+                                if abs_y <= 0.5 * B_bot:
+                                    Z_floor = z_start
+                                else:
+                                    ty = (abs_y - 0.5 * B_bot) / max(0.5 * B_top - 0.5 * B_bot, 1e-6)
+                                    Z_floor = z_start + H_layer * ty
+                                h_in_layer = max(min(Z_sand - Z_floor, z_end - Z_floor), 0.0)
+                                vol += wi * wj * h_in_layer
+                return vol
+
+        if lay.layer_type == "Hình hộp chữ nhật":
+            B = lay.params.get("B", 12.0)
+            y_subdomains = [(-0.5 * B, 0.0), (0.0, 0.5 * B)]
+            vol = 0.0
+            for xs, xe in x_subdomains:
+                x_mid, x_half = 0.5*(xs+xe), 0.5*(xe-xs)
+                for ys, ye in y_subdomains:
+                    y_mid, y_half = 0.5*(ys+ye), 0.5*(ye-ys)
+                    for i in range(n):
+                        xi = x_mid + x_half * pts[i]
+                        wi = x_half * wts[i]
+                        for j in range(n):
+                            yj = y_mid + y_half * pts[j]
+                            wj = y_half * wts[j]
+                            D_mat_xy = self.do_sau_mat_cat(xi, yj, L)
+                            Z_sand = z_total - D_mat_xy
+                            h_in_layer = max(min(Z_sand - z_start, H_layer), 0.0)
+                            vol += wi * wj * h_in_layer
+            return vol
+
+        elif lay.layer_type == "Hình hộp thang":
+            B_top = lay.params.get("B_top", 13.8)
+            B_bot = lay.params.get("B_bot", 12.0)
+            B_max = max(B_top, B_bot)
+            B_min = min(B_top, B_bot)
+            y_subdomains = [
+                (-0.5 * B_max, -0.5 * B_min),
+                (-0.5 * B_min, 0.0),
+                (0.0, 0.5 * B_min),
+                (0.5 * B_min, 0.5 * B_max)
+            ]
+            vol = 0.0
+            for xs, xe in x_subdomains:
+                x_mid, x_half = 0.5*(xs+xe), 0.5*(xe-xs)
+                for ys, ye in y_subdomains:
+                    if abs(ye - ys) < 1e-6:
+                        continue
+                    y_mid, y_half = 0.5*(ys+ye), 0.5*(ye-ys)
+                    for i in range(n):
+                        xi = x_mid + x_half * pts[i]
+                        wi = x_half * wts[i]
+                        for j in range(n):
+                            yj = y_mid + y_half * pts[j]
+                            wj = y_half * wts[j]
+                            D_mat_xy = self.do_sau_mat_cat(xi, yj, L)
+                            Z_sand = z_total - D_mat_xy
+                            abs_y = abs(yj)
+                            
+                            if B_top >= B_bot:
+                                if abs_y <= 0.5 * B_bot:
+                                    Z_floor = z_start
+                                else:
+                                    ty = (abs_y - 0.5 * B_bot) / max(0.5 * B_top - 0.5 * B_bot, 1e-6)
+                                    Z_floor = z_start + H_layer * ty
+                                Z_ceil = z_end
+                            else:
+                                Z_floor = z_start
+                                if abs_y <= 0.5 * B_top:
+                                    Z_ceil = z_end
+                                else:
+                                    ty = (abs_y - 0.5 * B_top) / max(0.5 * B_bot - 0.5 * B_top, 1e-6)
+                                    Z_ceil = z_start + H_layer * (1.0 - ty)
+                            
+                            h_in_layer = max(min(Z_sand - Z_floor, Z_ceil - Z_floor), 0.0)
+                            vol += wi * wj * h_in_layer
+            return vol
+
+        return 0.0
+
+    def tinh_tong_the_tich(self):
+        total_vol = 0.0
+        for i in range(len(self.layers)):
+            total_vol += self.tinh_the_tich_tang(i)
+        return total_vol
 
 
-# ============================================================
-# GIAO DIỆN PHẦN MỀM (GUI TKINTER)
-# ============================================================
-
-class UngDungTinhTheTich:
+class UngDungV2:
     def __init__(self, root):
         self.root = root
-        self.root.title("PHẦN MỀM TÍNH THỂ TÍCH CÁT TRÊN XÀ LAN (TÍCH HỢP 3D, MẶT CẮT, MẶT BẰNG)")
-        self.root.geometry("1400x920")
-        self.root.minsize(1240, 840)
+        self.root.title("TÍNH THỂ TÍCH CÁT XÀ LAN V2 - 2 TAB KHỔ LỚN CHUYÊN BIỆT")
+        self.root.geometry("1480x940")
+        self.root.minsize(1300, 860)
 
         self.o_nhap_lieu = {}
+        self.pan_start = None
+        self.custom_trans_limits = None
 
         self._tao_giao_dien()
-        self._cap_nhat_giao_dien_toan_bo()
+        self._setup_mouse_events()
+        self._cap_nhat_toan_bo()
 
-    def tao_o_nhap(self, khung_chua, hang, ma_khoa, ten_nhan, gia_tri_mac_dinh, don_vi="m", chu_thich=""):
-        nhan = ttk.Label(khung_chua, text=ten_nhan, font=("Segoe UI", 9, "bold"))
-        nhan.grid(row=hang, column=0, sticky="w", padx=6, pady=3)
+    def tao_o_nhap(self, parent, r, ma_khoa, ten_nhan, val_def, don_vi="m", note=""):
+        ttk.Label(parent, text=ten_nhan, font=("Segoe UI", 9, "bold")).grid(row=r, column=0, sticky="w", padx=4, pady=2)
+        frame_val = ttk.Frame(parent)
+        frame_val.grid(row=r, column=1, sticky="w", padx=4, pady=2)
 
-        khung_gia_tri = ttk.Frame(khung_chua)
-        khung_gia_tri.grid(row=hang, column=1, sticky="w", padx=6, pady=3)
+        entry = ttk.Entry(frame_val, width=10, font=("Segoe UI", 9))
+        entry.insert(0, str(val_def))
+        entry.pack(side="left")
+        ttk.Label(frame_val, text=f" {don_vi}", font=("Segoe UI", 9)).pack(side="left")
 
-        o_nhap = ttk.Entry(khung_gia_tri, width=11, font=("Segoe UI", 9))
-        o_nhap.insert(0, str(gia_tri_mac_dinh))
-        o_nhap.pack(side="left")
+        if note:
+            ttk.Label(parent, text=note, font=("Segoe UI", 8, "italic"), foreground="#666").grid(row=r, column=2, sticky="w", padx=4, pady=2)
 
-        ttk.Label(khung_gia_tri, text=f" {don_vi}", font=("Segoe UI", 9)).pack(side="left")
-
-        if chu_thich:
-            ttk.Label(
-                khung_chua, text=chu_thich, font=("Segoe UI", 8, "italic"), foreground="#555555"
-            ).grid(row=hang, column=2, sticky="w", padx=6, pady=3)
-
-        self.o_nhap_lieu[ma_khoa] = o_nhap
-        return o_nhap
+        self.o_nhap_lieu[ma_khoa] = entry
+        return entry
 
     def _tao_giao_dien(self):
         khung_tong = ttk.Frame(self.root)
-        khung_tong.pack(fill="both", expand=True, padx=8, pady=8)
+        khung_tong.pack(fill="both", expand=True, padx=6, pady=6)
 
-        # CỘT TRÁI: NHẬP LIỆU
-        cot_trai = ttk.Frame(khung_tong)
+        cot_trai = ttk.Frame(khung_tong, width=480)
         cot_trai.pack(side="left", fill="both", expand=False, padx=(0, 6))
 
-        # 1. KÍCH THƯỚC XÀ LAN
-        khung_xa_lan = ttk.LabelFrame(cot_trai, text="1. KÍCH THƯỚC KHOANG CHỨA CỦA XÀ LAN")
-        khung_xa_lan.pack(fill="x", pady=4)
+        canvas_scroll = tk.Canvas(cot_trai, borderwidth=0, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(cot_trai, orient="vertical", command=canvas_scroll.yview)
+        self.scrollable_frame = ttk.Frame(canvas_scroll)
 
-        self.tao_o_nhap(khung_xa_lan, 0, "chieu_dai", "Chiều dài lòng khoang chứa:", 60.0, "m", "Dài khoang")
-        self.tao_o_nhap(khung_xa_lan, 1, "chieu_rong", "Chiều rộng lòng khoang chứa:", 12.0, "m", "Rộng khoang")
-
-        ttk.Label(khung_xa_lan, text="Dạng đáy xà lan:", font=("Segoe UI", 9, "bold")).grid(
-            row=2, column=0, sticky="w", padx=6, pady=3
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas_scroll.configure(scrollregion=canvas_scroll.bbox("all"))
         )
+        canvas_scroll.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas_scroll.configure(yscrollcommand=scrollbar.set)
 
-        self.bien_loai_day = tk.StringVar(value="Đáy bằng")
-        hop_loai_day = ttk.Combobox(
-            khung_xa_lan,
-            textvariable=self.bien_loai_day,
-            values=["Đáy bằng", "Đáy chữ V"],
-            state="readonly",
-            width=16,
-            font=("Segoe UI", 9)
-        )
-        hop_loai_day.grid(row=2, column=1, sticky="w", padx=6, pady=3)
-        hop_loai_day.bind("<<ComboboxSelected>>", lambda e: self._cap_nhat_giao_dien_toan_bo())
+        canvas_scroll.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
-        self.khung_day_dong = ttk.Frame(khung_xa_lan)
-        self.khung_day_dong.grid(row=3, column=0, columnspan=3, sticky="ew", padx=2, pady=2)
+        # 1. PHẦN 1: ĐÁY SÀN
+        self.khung_p1 = ttk.LabelFrame(self.scrollable_frame, text="1. PHẦN 1: ĐÁY SÀN (TẦNG 1)")
+        self.khung_p1.pack(fill="x", pady=3, padx=2)
 
-        # 2. DẠNG BỀ MẶT CÁT
-        khung_mat_cat = ttk.LabelFrame(cot_trai, text="2. DẠNG PHÂN BỐ BỀ MẶT CÁT")
-        khung_mat_cat.pack(fill="x", pady=4)
+        ttk.Label(self.khung_p1, text="Dạng đáy sàn:", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", padx=4, pady=2)
+        self.var_p1 = tk.StringVar(value="Đáy hộp hình thang")
+        cb_p1 = ttk.Combobox(self.khung_p1, textvariable=self.var_p1, values=["Đáy hộp hình thang", "Đáy bằng", "Đáy chữ V"], state="readonly", width=18)
+        cb_p1.grid(row=0, column=1, sticky="w", padx=4, pady=2)
+        cb_p1.bind("<<ComboboxSelected>>", lambda e: self._cap_nhat_toan_bo(reset_zoom=True))
+        self.frame_p1_dyn = ttk.Frame(self.khung_p1)
+        self.frame_p1_dyn.grid(row=1, column=0, columnspan=3, sticky="ew", padx=2, pady=2)
 
-        ttk.Label(khung_mat_cat, text="Chọn dạng bề mặt cát:", font=("Segoe UI", 9, "bold")).grid(
-            row=0, column=0, sticky="w", padx=6, pady=3
-        )
+        # 2. PHẦN 2: THÂN CHÍNH
+        self.khung_p2 = ttk.LabelFrame(self.scrollable_frame, text="2. PHẦN 2: THÂN CHÍNH (TẦNG 2)")
+        self.khung_p2.pack(fill="x", pady=3, padx=2)
 
-        self.bien_loai_mat = tk.StringVar(value="1 - Mặt phẳng (Dàn trải đều)")
-        hop_loai_mat = ttk.Combobox(
-            khung_mat_cat,
-            textvariable=self.bien_loai_mat,
-            values=[
-                "1 - Mặt phẳng (Dàn trải đều)",
-                "2 - Dốc nghiêng trải dài từ Đầu đến Đuôi",
-                "3 - Nền phẳng + Đỉnh hình nón (Mặt cắt tam giác)",
-                "4 - Nền phẳng + Đỉnh vòm núm cong mượt (Nipple)",
-            ],
-            state="readonly",
-            width=40,
-            font=("Segoe UI", 9)
-        )
-        hop_loai_mat.grid(row=0, column=1, sticky="w", padx=6, pady=3)
-        hop_loai_mat.bind("<<ComboboxSelected>>", lambda e: self._cap_nhat_giao_dien_toan_bo())
+        ttk.Label(self.khung_p2, text="Dạng thân chính:", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", padx=4, pady=2)
+        self.var_p2 = tk.StringVar(value="Hình hộp thang")
+        cb_p2 = ttk.Combobox(self.khung_p2, textvariable=self.var_p2, values=["Hình hộp thang", "Hình hộp chữ nhật"], state="readonly", width=18)
+        cb_p2.grid(row=0, column=1, sticky="w", padx=4, pady=2)
+        cb_p2.bind("<<ComboboxSelected>>", lambda e: self._cap_nhat_toan_bo(reset_zoom=True))
+        self.frame_p2_dyn = ttk.Frame(self.khung_p2)
+        self.frame_p2_dyn.grid(row=1, column=0, columnspan=3, sticky="ew", padx=2, pady=2)
 
-        self.khung_mat_dong = ttk.Frame(khung_mat_cat)
-        self.khung_mat_dong.grid(row=1, column=0, columnspan=3, sticky="ew", padx=2, pady=2)
+        # 3. PHẦN 3: CỔ KHOANG
+        self.khung_p3 = ttk.LabelFrame(self.scrollable_frame, text="3. PHẦN 3: TẦNG PHỤ 1 (CỔ KHOANG / THÀNH BE)")
+        self.khung_p3.pack(fill="x", pady=3, padx=2)
 
-        # 3. KHỐI LƯỢNG RIÊNG
-        khung_vat_lieu = ttk.LabelFrame(cot_trai, text="3. KHỐI LƯỢNG RIÊNG")
-        khung_vat_lieu.pack(fill="x", pady=4)
+        ttk.Label(self.khung_p3, text="Chọn tầng phụ 1:", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", padx=4, pady=2)
+        self.var_p3 = tk.StringVar(value="Không có phần 3")
+        cb_p3 = ttk.Combobox(self.khung_p3, textvariable=self.var_p3, values=["Không có phần 3", "Hình hộp chữ nhật", "Hình hộp thang"], state="readonly", width=18)
+        cb_p3.grid(row=0, column=1, sticky="w", padx=4, pady=2)
+        cb_p3.bind("<<ComboboxSelected>>", lambda e: self._cap_nhat_toan_bo(reset_zoom=True))
+        self.frame_p3_dyn = ttk.Frame(self.khung_p3)
+        self.frame_p3_dyn.grid(row=1, column=0, columnspan=3, sticky="ew", padx=2, pady=2)
 
-        self.tao_o_nhap(
-            khung_vat_lieu, 0, "khoi_luong_rieng", "Khối lượng riêng của cát:", KHOI_LUONG_RIENG_MAC_DINH, "tấn/m³",
-            "Mặc định 1.65 tấn/m³"
-        )
+        # 4. PHẦN 4
+        self.khung_p4 = ttk.LabelFrame(self.scrollable_frame, text="4. PHẦN 4: TẦNG PHỤ 2 (NẰM TRÊN PHẦN 3)")
+        self.khung_p4.pack(fill="x", pady=3, padx=2)
 
-        # 4. NÚT ĐIỀU KHIỂN
-        khung_nut = ttk.Frame(cot_trai)
-        khung_nut.pack(fill="x", pady=4)
+        ttk.Label(self.khung_p4, text="Chọn tầng phụ 2:", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", padx=4, pady=2)
+        self.var_p4 = tk.StringVar(value="Không có phần 4")
+        cb_p4 = ttk.Combobox(self.khung_p4, textvariable=self.var_p4, values=["Không có phần 4", "Hình hộp chữ nhật", "Hình hộp thang"], state="readonly", width=18)
+        cb_p4.grid(row=0, column=1, sticky="w", padx=4, pady=2)
+        cb_p4.bind("<<ComboboxSelected>>", lambda e: self._cap_nhat_toan_bo(reset_zoom=True))
+        self.frame_p4_dyn = ttk.Frame(self.khung_p4)
+        self.frame_p4_dyn.grid(row=1, column=0, columnspan=3, sticky="ew", padx=2, pady=2)
 
-        nut_tinh = ttk.Button(khung_nut, text="▶ TÍNH THỂ TÍCH & KHỐI LƯỢNG", command=self.thuc_hien_tinh_toan)
-        nut_tinh.pack(side="left", padx=4, ipadx=8, ipady=3)
+        # 5. DẠNG MẶT CÁT
+        khung_mat = ttk.LabelFrame(self.scrollable_frame, text="5. DẠNG PHÂN BỐ BỀ MẶT CÁT")
+        khung_mat.pack(fill="x", pady=3, padx=2)
 
-        nut_xoa = ttk.Button(khung_nut, text="Làm mới lại", command=self.xoa_ket_qua)
-        nut_xoa.pack(side="left", padx=4, ipadx=4, ipady=3)
+        ttk.Label(khung_mat, text="Kiểu mặt cát:", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", padx=4, pady=2)
+        self.var_mat = tk.StringVar(value="1 - Mặt phẳng (Dàn trải đều)")
+        cb_mat = ttk.Combobox(khung_mat, textvariable=self.var_mat, values=[
+            "1 - Mặt phẳng (Dàn trải đều)",
+            "2 - Dốc nghiêng trải dài từ Đầu đến Đuôi",
+            "3 - Nền phẳng + Đỉnh hình nón (Mặt cắt tam giác)",
+            "4 - Nền phẳng + Đỉnh vòm núm cong mượt (Nipple)"
+        ], state="readonly", width=36)
+        cb_mat.grid(row=0, column=1, sticky="w", padx=4, pady=2)
+        cb_mat.bind("<<ComboboxSelected>>", lambda e: self._cap_nhat_toan_bo())
+        self.frame_mat_dyn = ttk.Frame(khung_mat)
+        self.frame_mat_dyn.grid(row=1, column=0, columnspan=3, sticky="ew", padx=2, pady=2)
 
-        # 5. KẾT QUẢ
-        khung_ket_qua = ttk.LabelFrame(cot_trai, text="4. BÁO CÁO KẾT QUẢ TÍNH TOÁN")
-        khung_ket_qua.pack(fill="both", expand=True, pady=4)
+        # 6. KHỐI LƯỢNG RIÊNG & NÚT
+        khung_act = ttk.Frame(self.scrollable_frame)
+        khung_act.pack(fill="x", pady=4, padx=2)
+        self.tao_o_nhap(khung_act, 0, "rho", "Khối lượng riêng cát:", KHOI_LUONG_RIENG_MAC_DINH, "tấn/m³")
 
-        self.o_ket_qua = tk.Text(
-            khung_ket_qua,
-            height=9,
-            width=56,
-            wrap="word",
-            font=("Consolas", 9),
-            bg="#fcfcfc"
-        )
-        self.o_ket_qua.pack(fill="both", expand=True, padx=4, pady=4)
+        btn_box = ttk.Frame(khung_act)
+        btn_box.grid(row=1, column=0, columnspan=3, sticky="w", pady=4)
+        ttk.Button(btn_box, text="▶ TÍNH THỂ TÍCH & KHỐI LƯỢNG", command=self.thuc_hien_tinh).pack(side="left", padx=2, ipadx=8, ipady=3)
+        ttk.Button(btn_box, text="Làm mới", command=self.reset_form).pack(side="left", padx=4)
+        ttk.Button(btn_box, text="⟲ Reset Zoom 2D", command=self.reset_zoom_2d).pack(side="left", padx=4)
 
-        # CỘT PHẢI: KHUNG ĐỒ HỌA
-        cot_phai = ttk.LabelFrame(khung_tong, text="🔍 HÌNH ẢNH TRỰC QUAN 3 GÓC NHÌN (3D - MẶT CẮT - MẶT BẰNG)")
-        cot_phai.pack(side="right", fill="both", expand=True, padx=(6, 0))
+        # BÁO CÁO KẾT QUẢ
+        khung_kq = ttk.LabelFrame(self.scrollable_frame, text="BÁO CÁO KẾT QUẢ")
+        khung_kq.pack(fill="x", pady=4, padx=2)
+        self.txt_kq = tk.Text(khung_kq, height=7, width=50, font=("Consolas", 9), bg="#fcfcfc")
+        self.txt_kq.pack(fill="both", expand=True, padx=4, pady=4)
 
-        self.fig = plt.figure(figsize=(7.6, 8.6), dpi=110, facecolor='#ffffff')
-        self.canvas = FigureCanvasTkAgg(self.fig, master=cot_phai)
-        self.canvas.get_tk_widget().pack(fill="both", expand=True, padx=2, pady=2)
+        # CỘT PHẢI: KHUNG ĐỒ HỌA 2 TAB KHỔ LỚN
+        cot_phai = ttk.Frame(khung_tong)
+        cot_phai.pack(side="right", fill="both", expand=True, padx=(4, 0))
 
-        self.xoa_ket_qua()
-
-    def _cap_nhat_giao_dien_toan_bo(self):
-        self._cap_nhat_o_nhap_day()
-        self._cap_nhat_o_nhap_mat_cat()
-        self._ve_hinh_minh_hoa()
-
-    def _cap_nhat_o_nhap_day(self):
-        for w in self.khung_day_dong.winfo_children():
-            w.destroy()
-
-        if self.bien_loai_day.get() == "Đáy bằng":
-            self.tao_o_nhap(
-                self.khung_day_dong, 0, "sau_day",
-                "Chiều sâu khoang xà lan:", 3.0, "m",
-                "Đo từ mép trên thành xuống đáy phẳng"
-            )
-        else:
-            self.tao_o_nhap(
-                self.khung_day_dong, 0, "sau_man",
-                "Chiều sâu đáy tại 2 bên mạn:", 2.0, "m",
-                "Đo từ mép trên thành xuống đáy sát mạn"
-            )
-            self.tao_o_nhap(
-                self.khung_day_dong, 1, "canh_nghieng_V",
-                "Chiều dài 1 cạnh nghiêng chữ V:", 6.5, "m",
-                "Kéo thước dọc sàn nghiêng từ mạn xuống tim đáy"
-            )
-
-    def _cap_nhat_o_nhap_mat_cat(self):
-        for w in self.khung_mat_dong.winfo_children():
-            w.destroy()
-
-        loai_mat = int(self.bien_loai_mat.get()[0])
-
-        if loai_mat == 1:
-            self.tao_o_nhap(
-                self.khung_mat_dong, 0, "do_hut_cat",
-                "Độ hụt mặt cát từ mép thành:", 1.0, "m",
-                "Thả thước từ mép thành xuống cát (nhô cao nhập số âm)"
-            )
-
-        elif loai_mat == 2:
-            self.tao_o_nhap(
-                self.khung_mat_dong, 0, "do_hut_dau",
-                "Độ hụt mặt cát tại ĐẦU tàu:", 0.8, "m",
-                "Thả thước từ mép thành tại mũi/đầu xà lan"
-            )
-            self.tao_o_nhap(
-                self.khung_mat_dong, 1, "do_hut_duoi",
-                "Độ hụt mặt cát tại ĐUÔI tàu:", 1.8, "m",
-                "Thả thước từ mép thành tại lái/đuôi xà lan"
-            )
-
-        elif loai_mat == 3:
-            self.tao_o_nhap(
-                self.khung_mat_dong, 0, "do_hut_nen",
-                "Độ hụt của lớp cát phẳng nền:", 1.5, "m",
-                "Độ sâu của mặt cát phẳng xung quanh chân đống nón"
-            )
-            self.tao_o_nhap(
-                self.khung_mat_dong, 1, "cao_non",
-                "Chiều cao đống nón cát nhô lên:", 0.8, "m",
-                "Đo từ đỉnh chóp nón xuống mặt phẳng nền"
-            )
-            self.tao_o_nhap(
-                self.khung_mat_dong, 2, "dai_chan_non",
-                "Chiều dài chân đống nón (dọc tàu):", 12.0, "m",
-                "Đường kính chân đống nón theo chiều dọc xà lan"
-            )
-            self.tao_o_nhap(
-                self.khung_mat_dong, 3, "rong_chan_non",
-                "Chiều rộng chân đống nón (ngang tàu):", 8.0, "m",
-                "Đường kính chân đống nón theo chiều ngang xà lan"
-            )
-
-        elif loai_mat == 4:
-            self.tao_o_nhap(
-                self.khung_mat_dong, 0, "do_hut_nen",
-                "Độ hụt của lớp cát phẳng nền:", 1.5, "m",
-                "Độ sâu của mặt cát phẳng xung quanh chân đụn cát"
-            )
-            self.tao_o_nhap(
-                self.khung_mat_dong, 1, "cao_num",
-                "Chiều cao đỉnh núm cát nhô lên:", 0.8, "m",
-                "Đo từ đỉnh vòm cong cao nhất xuống mặt phẳng nền"
-            )
-            self.tao_o_nhap(
-                self.khung_mat_dong, 2, "dai_chan_num",
-                "Chiều dài chân đụn cát (dọc tàu):", 24.0, "m",
-                "Toàn bộ chiều dài chân đụn cát theo chiều dọc"
-            )
-            self.tao_o_nhap(
-                self.khung_mat_dong, 3, "rong_chan_num",
-                "Chiều rộng chân đụn cát (ngang tàu):", 8.0, "m",
-                "Toàn bộ chiều rộng chân đụn cát theo chiều ngang"
-            )
-
-    # --------------------------------------------------------
-    # VẼ HÌNH MINH HỌA (3D: VÀNG NHẠT XUYÊN THẤU | 2D: VÀNG ĐẬM RÕ RÀNG NHƯ CŨ)
-    # --------------------------------------------------------
-    def _ve_hinh_minh_hoa(self):
-        self.fig.clf()
-
-        # TĂNG TỶ LỆ HÌNH 3D TO HƠN
-        gs = self.fig.add_gridspec(2, 2, height_ratios=[1.7, 1.0], hspace=0.26, wspace=0.2)
-
-        # 3 Subplot
-        ax_3d = self.fig.add_subplot(gs[0, :], projection='3d')
-        ax_sec = self.fig.add_subplot(gs[1, 0])
-        ax_top = self.fig.add_subplot(gs[1, 1])
-
-        # 1. MÀU DÙNG CHO 3D: VÀNG NHẠT XUYÊN THẤU
-        C_SAND_3D = '#f9e79f'         # Vàng nhạt cát
-        C_SAND_DARK_3D = '#d4ac0d'    # Viền vàng cát
-        ALPHA_SAND_3D = 0.50          # Độ xuyên thấu trong suốt cho 3D
-
-        # 2. MÀU DÙNG CHO 2D: VÀNG ĐẬM RÕ NÉT NHƯ CŨ
-        C_SAND_2D = '#e5b869'         # Màu cát vàng chuẩn như cũ
-        C_SAND_DARK_2D = '#b8860b'    # Viền đậm
-        C_SAND_CONE_2D = '#d4a047'    # Chóp nón vàng đậm
+        # Thanh nút chuyển đổi 2 Tab
+        bar_toggle = ttk.Frame(cot_phai)
+        bar_toggle.pack(fill="x", pady=(0, 4))
         
-        C_HULL_SIDE = '#5d6d7e'       # Thành xà lan
-        C_HULL_BOTTOM = '#78281f'     # Đáy nâu đỏ
-        C_CABIN = '#2471a3'           # Cabin xanh
-        C_MEASURE = '#ba4a00'         # Màu đo thước
-        C_LINE = '#c0392b'            # Đường mốc
+        ttk.Label(bar_toggle, text="CHẾ ĐỘ XEM:", font=("Segoe UI", 9, "bold")).pack(side="left", padx=(2, 6))
+        ttk.Button(bar_toggle, text="📐 1. XEM 2D MẶT CẮT KHỔ LỚN (ZOOM & PAN)", command=lambda: self.notebook.select(0)).pack(side="left", padx=3)
+        ttk.Button(bar_toggle, text="🌐 2. XEM 3D TOÀN MÀN HÌNH (XOAY 360°)", command=lambda: self.notebook.select(1)).pack(side="left", padx=3)
 
-        loai_day = self.bien_loai_day.get()
-        loai_mat = int(self.bien_loai_mat.get()[0])
+        self.notebook = ttk.Notebook(cot_phai)
+        self.notebook.pack(fill="both", expand=True)
 
-        L_d = 40.0
-        B_d = 12.0
-        H_wall = 3.0
-        x_mid = L_d / 2.0
+        # Tab 1: 2D KHỔ LỚN
+        self.tab_2d = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_2d, text="   📐 TAB 1: BẢN VẼ 2D KHỔ LỚN (LĂN CHUỘT ZOOM & PAN)   ")
+        self.fig_2d = plt.figure(figsize=(9.2, 8.5), dpi=105, facecolor='#ffffff')
+        self.canvas_2d = FigureCanvasTkAgg(self.fig_2d, master=self.tab_2d)
+        self.canvas_2d.get_tk_widget().pack(fill="both", expand=True, padx=2, pady=2)
 
-        # Grid cho 3D
-        x_grid = np.linspace(0, L_d, 40)
-        y_grid = np.linspace(-B_d/2, B_d/2, 25)
-        X, Y = np.meshgrid(x_grid, y_grid)
+        # Tab 2: 3D TOÀN MÀN HÌNH
+        self.tab_3d = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_3d, text="   🌐 TAB 2: MÔ HÌNH 3D TOÀN MÀN HÌNH (XOAY 360°)   ")
+        self.fig_3d = plt.figure(figsize=(9.2, 8.5), dpi=105, facecolor='#ffffff')
+        self.canvas_3d = FigureCanvasTkAgg(self.fig_3d, master=self.tab_3d)
+        self.canvas_3d.get_tk_widget().pack(fill="both", expand=True, padx=2, pady=2)
 
-        # =====================================================
-        # 1. TÍNH TOÁN BỀ MẶT CÁT & VẼ 3D (CÁT XUYÊN THẤU VÀNG NHẠT)
-        # =====================================================
-        if loai_mat == 1:
-            h_cat_d = 2.0
-            Z_3d = np.full_like(X, h_cat_d)
-            ten_th = "TH1: MẶT PHẲNG (DÀN TRẢI ĐỀU)"
-        elif loai_mat == 2:
-            h_dau_d = 2.5
-            h_duoi_d = 0.7
-            Z_3d = h_dau_d - (h_dau_d - h_duoi_d) * (X / L_d)
-            ten_th = "TH2: DỐC TỪ ĐẦU ĐẾN ĐUÔI"
-        elif loai_mat == 3:
-            h_nen_d = 1.2
-            H_non_d = 2.0
-            D_doc_d = 20.0
-            D_ngang_d = 8.0
-            r_c = np.sqrt(((X - x_mid)/(D_doc_d/2))**2 + (Y/(D_ngang_d/2))**2)
-            Z_3d = h_nen_d + np.maximum(0.0, H_non_d * (1.0 - r_c))
-            ten_th = "TH3: NỀN PHẲNG + ĐỈNH HÌNH NÓN"
-        elif loai_mat == 4:
-            h_nen_d = 1.2
-            H_num_d = 2.0
-            D_doc_d = 24.0
-            D_ngang_d = 8.0
-            r_c_sq = ((X - x_mid)/(D_doc_d/2))**2 + (Y/(D_ngang_d/2))**2
-            Z_3d = h_nen_d + H_num_d * np.maximum(0.0, 1.0 - r_c_sq)
-            ten_th = "TH4: NỀN PHẲNG + VÒM NÚM NIPPLE"
+    def _setup_mouse_events(self):
+        self.canvas_2d.mpl_connect('scroll_event', self._on_scroll)
+        self.canvas_2d.mpl_connect('button_press_event', self._on_press)
+        self.canvas_2d.mpl_connect('motion_notify_event', self._on_motion)
+        self.canvas_2d.mpl_connect('button_release_event', self._on_release)
 
-        # Vẽ bề mặt cát 3D vàng nhạt xuyên thấu
-        ax_3d.plot_surface(X, Y, Z_3d, color=C_SAND_3D, alpha=ALPHA_SAND_3D, edgecolor=C_SAND_DARK_3D, lw=0.15, shade=True)
+    def reset_zoom_2d(self):
+        self.custom_trans_limits = None
+        self._ve_do_hoa()
 
-        # Sàn đáy xà lan 3D
-        if loai_day == "Đáy chữ V":
-            Hv_3d = 1.6
-            v_bottom_l = [[0, -B_d/2, 0], [L_d, -B_d/2, 0], [L_d, 0, -Hv_3d], [0, 0, -Hv_3d]]
-            v_bottom_r = [[0, B_d/2, 0], [L_d, B_d/2, 0], [L_d, 0, -Hv_3d], [0, 0, -Hv_3d]]
-            ax_3d.add_collection3d(Poly3DCollection([v_bottom_l, v_bottom_r], facecolors=C_HULL_BOTTOM, edgecolors='darkred', alpha=0.9, lw=0.8))
-        else:
-            flat_bottom = [[0, -B_d/2, 0], [L_d, -B_d/2, 0], [L_d, B_d/2, 0], [0, B_d/2, 0]]
-            ax_3d.add_collection3d(Poly3DCollection([flat_bottom], facecolors=C_HULL_BOTTOM, edgecolors='black', alpha=0.9, lw=0.8))
+    def _on_scroll(self, event):
+        if hasattr(self, 'ax_trans') and event.inaxes == self.ax_trans:
+            cur_xlim = self.ax_trans.get_xlim()
+            cur_ylim = self.ax_trans.get_ylim()
+            
+            xdata = event.xdata if event.xdata is not None else (cur_xlim[0] + cur_xlim[1]) / 2.0
+            ydata = event.ydata if event.ydata is not None else (cur_ylim[0] + cur_ylim[1]) / 2.0
 
-        # Vách thành xà lan 3D
-        left_w = [[0, -B_d/2, 0], [L_d, -B_d/2, 0], [L_d, -B_d/2, H_wall], [0, -B_d/2, H_wall]]
-        right_w = [[0, B_d/2, 0], [L_d, B_d/2, 0], [L_d, B_d/2, H_wall], [0, B_d/2, H_wall]]
-        front_w = [[0, -B_d/2, 0], [0, B_d/2, 0], [0, B_d/2, H_wall], [0, -B_d/2, H_wall]]
-        back_w = [[L_d, -B_d/2, 0], [L_d, B_d/2, 0], [L_d, B_d/2, H_wall], [L_d, -B_d/2, H_wall]]
-        ax_3d.add_collection3d(Poly3DCollection([left_w, right_w, front_w, back_w], facecolors=C_HULL_SIDE, edgecolors='black', alpha=0.5, lw=0.6))
+            scale_factor = 1.0 / 1.25 if event.button == 'up' else 1.25
+            
+            cur_w = cur_xlim[1] - cur_xlim[0]
+            new_width = cur_w * scale_factor
+            
+            if new_width < 2.0 or new_width > 55.0:
+                return
 
-        # Cabin buồng lái ở đuôi
-        cabin_p = [
-            [[L_d+1, -2.5, H_wall], [L_d+4, -2.5, H_wall], [L_d+4, 2.5, H_wall], [L_d+1, 2.5, H_wall]],
-            [[L_d+1, -2.5, H_wall+2.0], [L_d+4, -2.5, H_wall+2.0], [L_d+4, 2.5, H_wall+2.0], [L_d+1, 2.5, H_wall+2.0]],
-            [[L_d+1, -2.5, H_wall], [L_d+4, -2.5, H_wall], [L_d+4, -2.5, H_wall+2.0], [L_d+1, -2.5, H_wall+2.0]],
-            [[L_d+1, 2.5, H_wall], [L_d+4, 2.5, H_wall], [L_d+4, 2.5, H_wall+2.0], [L_d+1, 2.5, H_wall+2.0]],
-            [[L_d+1, -2.5, H_wall], [L_d+1, 2.5, H_wall], [L_d+1, 2.5, H_wall+2.0], [L_d+1, -2.5, H_wall+2.0]]
-        ]
-        ax_3d.add_collection3d(Poly3DCollection(cabin_p, facecolors=C_CABIN, edgecolors='navy', alpha=0.9, lw=0.6))
+            new_height = (cur_ylim[1] - cur_ylim[0]) * scale_factor
 
-        ax_3d.set_title(f"1. GÓC NHÌN 3D KHÔNG GIAN (CÁT XUYÊN THẤU) - {ten_th}", fontsize=11, fontweight='bold', color='#0b2545', pad=4)
-        ax_3d.set_xlim(-3, L_d+5)
-        ax_3d.set_ylim(-B_d/2-2.5, B_d/2+2.5)
-        ax_3d.set_zlim(-1.8 if loai_day == "Đáy chữ V" else -0.5, H_wall + 2.5)
-        ax_3d.view_init(elev=26, azim=-58)
-        ax_3d.set_axis_off()
+            rel_x = (cur_xlim[1] - xdata) / cur_w
+            rel_y = (cur_ylim[1] - ydata) / (cur_ylim[1] - cur_ylim[0])
 
-        # =====================================================
-        # 2. VẼ MẶT CẮT DỌC (SIDE VIEW) - MÀU CÁT 2D VÀNG ĐẬM RÕ NÉT NHƯ CŨ
-        # =====================================================
-        y_rim = 5.5
-        y_bot = 1.8
-        y_tim_v = y_bot - 1.2
+            new_xlim = [xdata - new_width * (1 - rel_x), xdata + new_width * rel_x]
+            new_ylim = [ydata - new_height * (1 - rel_y), ydata + new_height * rel_y]
 
-        ax_sec.axhline(y_rim, color=C_LINE, linestyle='--', lw=1.2)
-        ax_sec.text(x_mid, y_rim + 0.15, 'MÉP TRÊN THÀNH (0.0m)', color=C_LINE, fontsize=7.5, fontweight='bold', ha='center')
+            self.custom_trans_limits = (new_xlim, new_ylim)
+            self.ax_trans.set_xlim(new_xlim)
+            self.ax_trans.set_ylim(new_ylim)
+            self.canvas_2d.draw_idle()
 
-        if loai_mat == 1:
-            h_cat = y_rim - 1.5
-            if loai_day == "Đáy bằng":
-                ax_sec.fill([0, L_d, L_d, 0], [y_bot, y_bot, h_cat, h_cat], color=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.5)
-            else:
-                ax_sec.fill([0, x_mid, L_d, L_d, 0], [y_bot, y_tim_v, y_bot, h_cat, h_cat], color=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.5)
-                ax_sec.plot([0, L_d], [y_bot, y_bot], color='#8b5a2b', linestyle=':', lw=0.8)
-            ax_sec.annotate('', xy=(x_mid, h_cat), xytext=(x_mid, y_rim), arrowprops=dict(arrowstyle='<->', color=C_MEASURE, lw=1.8))
-            ax_sec.text(x_mid + 0.8, (h_cat + y_rim)/2, 'Độ hụt mặt cát', color=C_MEASURE, fontsize=8, fontweight='bold', va='center')
+    def _on_press(self, event):
+        if hasattr(self, 'ax_trans') and event.inaxes == self.ax_trans:
+            if event.dblclick:
+                self.reset_zoom_2d()
+                return
+            if event.button in [1, 2, 3]:
+                self.pan_start = (event.xdata, event.ydata)
 
-        elif loai_mat == 2:
-            h_dau = y_rim - 1.0
-            h_duoi = y_rim - 2.5
-            if loai_day == "Đáy bằng":
-                ax_sec.fill([0, L_d, L_d, 0], [y_bot, y_bot, h_duoi, h_dau], color=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.5)
-            else:
-                ax_sec.fill([0, x_mid, L_d, L_d, 0], [y_bot, y_tim_v, y_bot, h_duoi, h_dau], color=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.5)
-                ax_sec.plot([0, L_d], [y_bot, y_bot], color='#8b5a2b', linestyle=':', lw=0.8)
-            ax_sec.annotate('', xy=(2.5, h_dau), xytext=(2.5, y_rim), arrowprops=dict(arrowstyle='<->', color=C_MEASURE, lw=1.8))
-            ax_sec.text(2.5, h_dau - 0.3, 'Độ hụt ĐẦU', color=C_MEASURE, fontsize=7.5, fontweight='bold', ha='center', va='top')
-            ax_sec.annotate('', xy=(L_d - 2.5, h_duoi), xytext=(L_d - 2.5, y_rim), arrowprops=dict(arrowstyle='<->', color='#2980b9', lw=1.8))
-            ax_sec.text(L_d - 2.5, h_duoi - 0.3, 'Độ hụt ĐUÔI', color='#2980b9', fontsize=7.5, fontweight='bold', ha='center', va='top')
+    def _on_motion(self, event):
+        if self.pan_start is not None and hasattr(self, 'ax_trans') and event.inaxes == self.ax_trans:
+            if event.xdata is not None and event.ydata is not None:
+                dx = event.xdata - self.pan_start[0]
+                dy = event.ydata - self.pan_start[1]
+                
+                cur_xlim = self.ax_trans.get_xlim()
+                cur_ylim = self.ax_trans.get_ylim()
 
-        elif loai_mat == 3:
-            h_nen = y_rim - 2.0
-            H_non_w = 1.4
-            D_non_w = 16.0
-            if loai_day == "Đáy bằng":
-                ax_sec.fill([0, L_d, L_d, 0], [y_bot, y_bot, h_nen, h_nen], color=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.2)
-            else:
-                ax_sec.fill([0, x_mid, L_d, L_d, 0], [y_bot, y_tim_v, y_bot, h_nen, h_nen], color=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.2)
-                ax_sec.plot([0, L_d], [y_bot, y_bot], color='#8b5a2b', linestyle=':', lw=0.8)
-            ax_sec.fill([x_mid - D_non_w/2, x_mid, x_mid + D_non_w/2], [h_nen, h_nen + H_non_w, h_nen], color=C_SAND_CONE_2D, edgecolor=C_SAND_DARK_2D, lw=1.5)
-            ax_sec.annotate('', xy=(2.5, h_nen), xytext=(2.5, y_rim), arrowprops=dict(arrowstyle='<->', color=C_MEASURE, lw=1.5))
-            ax_sec.text(2.5, (h_nen + y_rim)/2, 'Độ hụt nền', color=C_MEASURE, fontsize=7.5, fontweight='bold', ha='center', va='center')
-            ax_sec.annotate('', xy=(x_mid, h_nen + H_non_w), xytext=(x_mid, h_nen), arrowprops=dict(arrowstyle='<->', color='#27ae60', lw=1.8))
-            ax_sec.text(x_mid + 0.6, (h_nen*2 + H_non_w)/2, 'Cao nón', color='#27ae60', fontsize=8, fontweight='bold', va='center')
+                new_xlim = [cur_xlim[0] - dx, cur_xlim[1] - dx]
+                new_ylim = [cur_ylim[0] - dy, cur_ylim[1] - dy]
 
-        elif loai_mat == 4:
-            h_nen = y_rim - 2.0
-            H_num_w = 1.4
-            D_num_w = 18.0
-            if loai_day == "Đáy bằng":
-                ax_sec.fill([0, L_d, L_d, 0], [y_bot, y_bot, h_nen, h_nen], color=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.2)
-            else:
-                ax_sec.fill([0, x_mid, L_d, L_d, 0], [y_bot, y_tim_v, y_bot, h_nen, h_nen], color=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.2)
-                ax_sec.plot([0, L_d], [y_bot, y_bot], color='#8b5a2b', linestyle=':', lw=0.8)
-            x_l = np.linspace(0, L_d, 150)
-            z_n = h_nen + H_num_w * np.maximum(0.0, 1.0 - ((x_l - x_mid)/(D_num_w/2))**2)
-            ax_sec.fill_between(x_l, h_nen, z_n, color=C_SAND_CONE_2D, edgecolor=C_SAND_DARK_2D, lw=1.5)
-            ax_sec.annotate('', xy=(2.5, h_nen), xytext=(2.5, y_rim), arrowprops=dict(arrowstyle='<->', color=C_MEASURE, lw=1.5))
-            ax_sec.text(2.5, (h_nen + y_rim)/2, 'Độ hụt nền', color=C_MEASURE, fontsize=7.5, fontweight='bold', ha='center', va='center')
-            ax_sec.annotate('', xy=(x_mid, h_nen + H_num_w), xytext=(x_mid, h_nen), arrowprops=dict(arrowstyle='<->', color='#27ae60', lw=1.8))
-            ax_sec.text(x_mid + 0.6, (h_nen*2 + H_num_w)/2, 'Cao núm', color='#27ae60', fontsize=8, fontweight='bold', va='center')
+                self.custom_trans_limits = (new_xlim, new_ylim)
+                self.ax_trans.set_xlim(new_xlim)
+                self.ax_trans.set_ylim(new_ylim)
+                self.canvas_2d.draw_idle()
 
-        # Khung thân và đáy 2D
-        if loai_day == "Đáy bằng":
-            ax_sec.plot([-1.5, 0, L_d, L_d+1.5], [y_rim, y_bot, y_bot, y_rim], color=C_HULL_SIDE, lw=2.5)
-        else:
-            ax_sec.plot([0, x_mid, L_d], [y_bot, y_tim_v, y_bot], color=C_HULL_BOTTOM, lw=3)
-            ax_sec.plot([0, 0], [y_bot, y_rim], color=C_HULL_SIDE, lw=2.5)
-            ax_sec.plot([L_d, L_d], [y_bot, y_rim], color=C_HULL_SIDE, lw=2.5)
+    def _on_release(self, event):
+        self.pan_start = None
 
-        ax_sec.set_title("2. MẶT CẮT DỌC (SIDE VIEW)", fontsize=9.5, fontweight='bold', color='#0b2545', pad=2)
-        ax_sec.set_xlim(-3, L_d + 3)
-        ax_sec.set_ylim(-0.2 if loai_day == "Đáy chữ V" else 0.8, y_rim + 1.0)
-        ax_sec.axis('off')
+    def _cap_nhat_toan_bo(self, reset_zoom=False):
+        if reset_zoom:
+            self.custom_trans_limits = None
+        self._build_dyn_p1()
+        self._build_dyn_p2()
+        self._build_dyn_p3()
+        self._build_dyn_p4()
+        self._build_dyn_mat()
+        self._ve_do_hoa()
 
-        # =====================================================
-        # 3. VẼ MẶT CHIẾU BẰNG (TOP VIEW) - MÀU CÁT 2D VÀNG ĐẬM RÕ NÉT NHƯ CŨ
-        # =====================================================
-        ax_top.add_patch(patches.Rectangle((-2.5, -B_d/2 - 0.6), L_d + 6.5, B_d + 1.2, facecolor=C_HULL_SIDE, edgecolor='black', lw=1.0))
-        ax_top.add_patch(patches.Rectangle((L_d + 0.5, -2.5), 3, 5, facecolor=C_CABIN, edgecolor='navy', lw=1.0))
-        ax_top.add_patch(patches.Rectangle((0, -B_d/2), L_d, B_d, facecolor=C_SAND_2D, edgecolor=C_SAND_DARK_2D, lw=1.0))
+    def _build_dyn_p1(self):
+        for w in self.frame_p1_dyn.winfo_children(): w.destroy()
+        t = self.var_p1.get()
+        self.tao_o_nhap(self.frame_p1_dyn, 0, "p1_L", "Chiều dài lòng khoang L:", 60.0, "m")
+        if t == "Đáy bằng":
+            self.tao_o_nhap(self.frame_p1_dyn, 1, "p1_B", "Chiều rộng sàn phẳng B1:", 12.0, "m")
+            self.tao_o_nhap(self.frame_p1_dyn, 2, "p1_H", "Chiều cao tầng đáy H1:", 0.6, "m")
+        elif t == "Đáy chữ V":
+            self.tao_o_nhap(self.frame_p1_dyn, 1, "p1_B", "Chiều rộng miệng mạn B1:", 12.0, "m")
+            self.tao_o_nhap(self.frame_p1_dyn, 2, "p1_C", "Cạnh nghiêng chữ V C1:", 6.03, "m", "(Pytago tính H1)")
+        elif t == "Đáy hộp hình thang":
+            self.tao_o_nhap(self.frame_p1_dyn, 1, "p1_B_top", "Chiều rộng Đáy trên B1_top:", 12.0, "m")
+            self.tao_o_nhap(self.frame_p1_dyn, 2, "p1_B_bot", "Chiều rộng Đáy dưới B1_bot:", 7.5, "m")
+            self.tao_o_nhap(self.frame_p1_dyn, 3, "p1_H", "Chiều cao vát đáy H1:", 0.6, "m")
 
-        if loai_mat == 1:
-            ax_top.text(x_mid, 0, 'CÁT DÀN PHẲNG ĐỀU (L × B)', color='#5a3e1b', fontsize=8.5, fontweight='bold', ha='center', va='center')
-        elif loai_mat == 2:
-            ax_top.plot([0, L_d], [-B_d/2, B_d/2], color='red', linestyle='--', lw=1.2)
-            ax_top.annotate('', xy=(L_d - 4, 0), xytext=(4, 0), arrowprops=dict(arrowstyle='->', color='red', lw=1.5))
-            ax_top.text(x_mid, 1.2, 'Hướng dốc từ Đầu ➔ Đuôi', color='red', fontsize=8, fontweight='bold', ha='center')
-        elif loai_mat == 3:
-            d_doc_t = 16.0
-            d_ngang_t = 7.5
-            elip_c = patches.Ellipse((x_mid, 0), d_doc_t, d_ngang_t, facecolor=C_SAND_CONE_2D, edgecolor=C_SAND_DARK_2D, lw=1.2)
-            ax_top.add_patch(elip_c)
-            ax_top.plot(x_mid, 0, 'ro', markersize=3)
-            ax_top.annotate('', xy=(x_mid - d_doc_t/2, 0), xytext=(x_mid + d_doc_t/2, 0), arrowprops=dict(arrowstyle='<->', color='#8e44ad', lw=1.4))
-            ax_top.text(x_mid, 0.8, 'Dài chân nón', color='#8e44ad', fontsize=7.5, fontweight='bold', ha='center')
-            ax_top.annotate('', xy=(x_mid, -d_ngang_t/2), xytext=(x_mid, d_ngang_t/2), arrowprops=dict(arrowstyle='<->', color='#2980b9', lw=1.4))
-            ax_top.text(x_mid + d_doc_t/2 + 0.8, 0, 'Rộng nón', color='#2980b9', fontsize=7.5, fontweight='bold', va='center')
-        elif loai_mat == 4:
-            d_doc_t = 20.0
-            d_ngang_t = 8.0
-            for rx, ry in [(d_doc_t, d_ngang_t), (d_doc_t*0.65, d_ngang_t*0.65), (d_doc_t*0.35, d_ngang_t*0.35)]:
-                elip_n = patches.Ellipse((x_mid, 0), rx, ry, fill=False, edgecolor='red', linestyle='--', lw=1.0)
-                ax_top.add_patch(elip_n)
-            ax_top.plot(x_mid, 0, 'ro', markersize=3)
-            ax_top.annotate('', xy=(x_mid - d_doc_t/2, 0), xytext=(x_mid + d_doc_t/2, 0), arrowprops=dict(arrowstyle='<->', color='#8e44ad', lw=1.4))
-            ax_top.text(x_mid, 0.8, 'Dài chân đụn (dọc)', color='#8e44ad', fontsize=7.5, fontweight='bold', ha='center')
-            ax_top.annotate('', xy=(x_mid, -d_ngang_t/2), xytext=(x_mid, d_ngang_t/2), arrowprops=dict(arrowstyle='<->', color='#2980b9', lw=1.4))
-            ax_top.text(x_mid + d_doc_t/2 + 0.8, 0, 'Rộng đụn\n(ngang)', color='#2980b9', fontsize=7.5, fontweight='bold', va='center')
+    def _build_dyn_p2(self):
+        for w in self.frame_p2_dyn.winfo_children(): w.destroy()
+        t = self.var_p2.get()
+        self.tao_o_nhap(self.frame_p2_dyn, 0, "p2_L", "Chiều dài mạn P2:", 60.0, "m")
+        if t == "Hình hộp chữ nhật":
+            self.tao_o_nhap(self.frame_p2_dyn, 1, "p2_B", "Chiều rộng thân chính B2:", 12.0, "m")
+            self.tao_o_nhap(self.frame_p2_dyn, 2, "p2_H", "Chiều cao thân chính H2:", 2.2, "m")
+        elif t == "Hình hộp thang":
+            self.tao_o_nhap(self.frame_p2_dyn, 1, "p2_B_top", "Chiều rộng Đáy trên B2_top:", 13.8, "m")
+            self.tao_o_nhap(self.frame_p2_dyn, 2, "p2_B_bot", "Chiều rộng Đáy dưới B2_bot:", 12.0, "m")
+            self.tao_o_nhap(self.frame_p2_dyn, 3, "p2_H", "Chiều cao thân chính H2:", 2.2, "m")
 
-        # Kích thước L, B
-        ax_top.annotate('', xy=(0, -B_d/2 - 1.2), xytext=(L_d, -B_d/2 - 1.2), arrowprops=dict(arrowstyle='<->', color='blue', lw=1.2))
-        ax_top.text(x_mid, -B_d/2 - 2.5, 'Dài L', fontsize=8, fontweight='bold', color='blue', ha='center')
+    def _build_dyn_p3(self):
+        for w in self.frame_p3_dyn.winfo_children(): w.destroy()
+        t = self.var_p3.get()
+        if t == "Không có phần 3":
+            ttk.Label(self.frame_p3_dyn, text="(Đã tắt phần 3)", font=("Segoe UI", 8, "italic"), foreground="#888").pack(anchor="w")
+            return
+        self.tao_o_nhap(self.frame_p3_dyn, 0, "p3_L", "Chiều dài mạn P3:", 60.0, "m")
+        if t == "Hình hộp chữ nhật":
+            self.tao_o_nhap(self.frame_p3_dyn, 1, "p3_B", "Chiều rộng cổ khoang B3:", 10.5, "m", "(Thụt vào trong)")
+            self.tao_o_nhap(self.frame_p3_dyn, 2, "p3_H", "Chiều cao cổ khoang H3:", 0.8, "m")
+        elif t == "Hình hộp thang":
+            self.tao_o_nhap(self.frame_p3_dyn, 1, "p3_B_top", "Chiều rộng Đáy trên B3_top:", 11.5, "m")
+            self.tao_o_nhap(self.frame_p3_dyn, 2, "p3_B_bot", "Chiều rộng Đáy dưới B3_bot:", 10.5, "m")
+            self.tao_o_nhap(self.frame_p3_dyn, 3, "p3_H", "Chiều cao phần 3 H3:", 0.8, "m")
 
-        ax_top.set_title("3. MẶT CHIẾU BẰNG (TOP VIEW)", fontsize=9.5, fontweight='bold', color='#0b2545', pad=2)
-        ax_top.set_xlim(-4, L_d + 8)
-        ax_top.set_ylim(-B_d/2 - 3.2, B_d/2 + 2.0)
-        ax_top.axis('off')
+    def _build_dyn_p4(self):
+        for w in self.frame_p4_dyn.winfo_children(): w.destroy()
+        t = self.var_p4.get()
+        if t == "Không có phần 4":
+            ttk.Label(self.frame_p4_dyn, text="(Đã tắt phần 4)", font=("Segoe UI", 8, "italic"), foreground="#888").pack(anchor="w")
+            return
+        self.tao_o_nhap(self.frame_p4_dyn, 0, "p4_L", "Chiều dài mạn P4:", 60.0, "m")
+        if t == "Hình hộp chữ nhật":
+            self.tao_o_nhap(self.frame_p4_dyn, 1, "p4_B", "Chiều rộng phần 4 B4:", 9.0, "m")
+            self.tao_o_nhap(self.frame_p4_dyn, 2, "p4_H", "Chiều cao phần 4 H4:", 0.5, "m")
+        elif t == "Hình hộp thang":
+            self.tao_o_nhap(self.frame_p4_dyn, 1, "p4_B_top", "Chiều rộng Đáy trên B4_top:", 9.5, "m")
+            self.tao_o_nhap(self.frame_p4_dyn, 2, "p4_B_bot", "Chiều rộng Đáy dưới B4_bot:", 9.0, "m")
+            self.tao_o_nhap(self.frame_p4_dyn, 3, "p4_H", "Chiều cao phần 4 H4:", 0.5, "m")
 
-        self.canvas.draw()
+    def _build_dyn_mat(self):
+        for w in self.frame_mat_dyn.winfo_children(): w.destroy()
+        lm = int(self.var_mat.get()[0])
+        if lm == 1:
+            self.tao_o_nhap(self.frame_mat_dyn, 0, "do_hut_cat", "Độ hụt mặt cát từ mép trên:", 0.8, "m")
+        elif lm == 2:
+            self.tao_o_nhap(self.frame_mat_dyn, 0, "do_hut_dau", "Độ hụt tại ĐẦU tàu:", 0.5, "m")
+            self.tao_o_nhap(self.frame_mat_dyn, 1, "do_hut_duoi", "Độ hụt tại ĐUÔI tàu:", 1.5, "m")
+        elif lm == 3:
+            self.tao_o_nhap(self.frame_mat_dyn, 0, "do_hut_nen", "1. Độ hụt cát nền:", 1.2, "m")
+            self.tao_o_nhap(self.frame_mat_dyn, 1, "cao_non", "2. Chiều cao đống nón:", 1.0, "m")
+            self.tao_o_nhap(self.frame_mat_dyn, 2, "dai_chan_non", "3. Dài chân nón (dọc):", 16.0, "m")
+            self.tao_o_nhap(self.frame_mat_dyn, 3, "rong_chan_non", "4. Rộng chân nón (ngang):", 8.0, "m")
+        elif lm == 4:
+            self.tao_o_nhap(self.frame_mat_dyn, 0, "do_hut_nen", "1. Độ hụt cát nền:", 1.2, "m")
+            self.tao_o_nhap(self.frame_mat_dyn, 1, "cao_num", "2. Cao đỉnh vòm núm:", 1.0, "m")
+            self.tao_o_nhap(self.frame_mat_dyn, 2, "dai_chan_num", "3. Dài chân đụn (dọc):", 24.0, "m")
+            self.tao_o_nhap(self.frame_mat_dyn, 3, "rong_chan_num", "4. Rộng chân đụn (ngang):", 8.0, "m")
 
-    # --------------------------------------------------------
-    # TÍNH TOÁN
-    # --------------------------------------------------------
-    def _lay_so_thuc(self, ma_khoa, ten_hien_thi):
+    def _lay_f(self, k, name=""):
         try:
-            gia_tri = float(self.o_nhap_lieu[ma_khoa].get().strip())
+            return float(self.o_nhap_lieu[k].get().strip())
         except Exception:
-            raise ValueError(f"'{ten_hien_thi}': giá trị nhập vào không đúng định dạng số.")
-        if not math.isfinite(gia_tri):
-            raise ValueError(f"'{ten_hien_thi}': phải là số hữu hạn.")
-        return gia_tri
+            raise ValueError(f"Giá trị '{name}' không đúng định dạng số.")
 
-    def _doc_du_lieu_dau_vao(self):
-        chieu_dai = self._lay_so_thuc("chieu_dai", "Chiều dài khoang")
-        chieu_rong = self._lay_so_thuc("chieu_rong", "Chiều rộng khoang")
+    def _doc_layers(self):
+        layers = []
+        t1 = self.var_p1.get()
+        L1 = self._lay_f("p1_L", "Chiều dài P1")
+        if t1 == "Đáy bằng":
+            layers.append(LayerGeometry("Phần 1", t1, {"L": L1, "B": self._lay_f("p1_B", "Rộng P1"), "H": self._lay_f("p1_H", "Chiều cao P1")}))
+        elif t1 == "Đáy chữ V":
+            B1 = self._lay_f("p1_B", "Rộng miệng mạn P1")
+            C1 = self._lay_f("p1_C", "Cạnh nghiêng chữ V P1")
+            halfB = B1 / 2.0
+            if C1 <= halfB:
+                raise ValueError(f"Cạnh nghiêng chữ V C1 ({C1}m) phải lớn hơn nửa chiều rộng mạn B1/2 ({halfB}m) để tạo thành tam giác.")
+            H1 = math.sqrt(C1**2 - halfB**2)
+            layers.append(LayerGeometry("Phần 1", t1, {"L": L1, "B": B1, "C": C1, "H": H1}))
+        elif t1 == "Đáy hộp hình thang":
+            layers.append(LayerGeometry("Phần 1", t1, {
+                "L": L1, "B_top": self._lay_f("p1_B_top", "Đáy trên P1"),
+                "B_bot": self._lay_f("p1_B_bot", "Đáy dưới P1"), "H": self._lay_f("p1_H", "Chiều cao P1")
+            }))
 
-        if chieu_dai <= 0 or chieu_rong <= 0:
-            raise ValueError("Chiều dài và Chiều rộng khoang chứa xà lan phải lớn hơn 0.")
+        t2 = self.var_p2.get()
+        L2 = self._lay_f("p2_L", "Chiều dài P2")
+        if t2 == "Hình hộp chữ nhật":
+            layers.append(LayerGeometry("Phần 2", t2, {"L": L2, "B": self._lay_f("p2_B", "Rộng P2"), "H": self._lay_f("p2_H", "Chiều cao P2")}))
+        elif t2 == "Hình hộp thang":
+            layers.append(LayerGeometry("Phần 2", t2, {
+                "L": L2, "B_top": self._lay_f("p2_B_top", "Đáy trên P2"),
+                "B_bot": self._lay_f("p2_B_bot", "Đáy dưới P2"), "H": self._lay_f("p2_H", "Chiều cao P2")
+            }))
 
-        loai_day = self.bien_loai_day.get()
-        if loai_day == "Đáy bằng":
-            sau_day = self._lay_so_thuc("sau_day", "Chiều sâu khoang xà lan")
-            if sau_day <= 0:
-                raise ValueError("Chiều sâu khoang xà lan phải lớn hơn 0.")
-            thong_so_day = {"sau_day": sau_day}
-        else:
-            sau_man = self._lay_so_thuc("sau_man", "Chiều sâu đáy tại 2 bên mạn")
-            canh_nghieng_V = self._lay_so_thuc("canh_nghieng_V", "Chiều dài 1 cạnh nghiêng chữ V")
-            
-            if sau_man <= 0 or canh_nghieng_V <= 0:
-                raise ValueError("Chiều sâu tại mạn và Chiều dài cạnh nghiêng chữ V phải lớn hơn 0.")
-            
-            nua_rong = chieu_rong / 2.0
-            if canh_nghieng_V < nua_rong:
-                raise ValueError(
-                    f"Chiều dài cạnh nghiêng chữ V ({canh_nghieng_V}m) không hợp lệ.\n"
-                    f"Cạnh nghiêng phải lớn hơn hoặc bằng nửa chiều rộng xà lan (B/2 = {nua_rong:.2f}m)."
-                )
-            
-            thong_so_day = {"sau_man": sau_man, "canh_nghieng_V": canh_nghieng_V}
+        t3 = self.var_p3.get()
+        if t3 != "Không có phần 3":
+            L3 = self._lay_f("p3_L", "Chiều dài P3")
+            if t3 == "Hình hộp chữ nhật":
+                layers.append(LayerGeometry("Phần 3", t3, {"L": L3, "B": self._lay_f("p3_B", "Rộng P3"), "H": self._lay_f("p3_H", "Chiều cao P3")}))
+            elif t3 == "Hình hộp thang":
+                layers.append(LayerGeometry("Phần 3", t3, {
+                    "L": L3, "B_top": self._lay_f("p3_B_top", "Đáy trên P3"),
+                    "B_bot": self._lay_f("p3_B_bot", "Đáy dưới P3"), "H": self._lay_f("p3_H", "Chiều cao P3")
+                }))
 
-        loai_mat = int(self.bien_loai_mat.get()[0])
+        t4 = self.var_p4.get()
+        if t4 != "Không có phần 4":
+            L4 = self._lay_f("p4_L", "Chiều dài P4")
+            if t4 == "Hình hộp chữ nhật":
+                layers.append(LayerGeometry("Phần 4", t4, {"L": L4, "B": self._lay_f("p4_B", "Rộng P4"), "H": self._lay_f("p4_H", "Chiều cao P4")}))
+            elif t4 == "Hình hộp thang":
+                layers.append(LayerGeometry("Phần 4", t4, {
+                    "L": L4, "B_top": self._lay_f("p4_B_top", "Đáy trên P4"),
+                    "B_bot": self._lay_f("p4_B_bot", "Đáy dưới P4"), "H": self._lay_f("p4_H", "Chiều cao P4")
+                }))
 
-        if loai_mat == 1:
-            do_hut_cat = self._lay_so_thuc("do_hut_cat", "Độ hụt mặt cát")
-            thong_so_mat = {"do_hut_cat": do_hut_cat}
+        return layers
 
-        elif loai_mat == 2:
-            do_hut_dau = self._lay_so_thuc("do_hut_dau", "Độ hụt tại đầu tàu")
-            do_hut_duoi = self._lay_so_thuc("do_hut_duoi", "Độ hụt tại đuôi tàu")
-            thong_so_mat = {"do_hut_dau": do_hut_dau, "do_hut_duoi": do_hut_duoi}
-
-        elif loai_mat == 3:
-            do_hut_nen = self._lay_so_thuc("do_hut_nen", "Độ hụt lớp cát nền")
-            cao_non = self._lay_so_thuc("cao_non", "Chiều cao đống nón")
-            dai_chan_non = self._lay_so_thuc("dai_chan_non", "Chiều dài chân đống nón")
-            rong_chan_non = self._lay_so_thuc("rong_chan_non", "Chiều rộng chân đống nón")
-
-            if cao_non < 0 or dai_chan_non <= 0 or rong_chan_non <= 0:
-                raise ValueError("Chiều cao đống nón phải >= 0 và các kích thước chân nón phải > 0.")
-
-            if dai_chan_non > chieu_dai:
-                raise ValueError(f"Chiều dài chân đống nón ({dai_chan_non}m) lớn hơn chiều dài khoang ({chieu_dai}m).")
-            if rong_chan_non > chieu_rong:
-                raise ValueError(f"Chiều rộng chân đống nón ({rong_chan_non}m) lớn hơn chiều rộng khoang ({chieu_rong}m).")
-
-            thong_so_mat = {
-                "do_hut_nen": do_hut_nen,
-                "cao_non": cao_non,
-                "dai_chan_non": dai_chan_non,
-                "rong_chan_non": rong_chan_non
+    def _doc_mat(self):
+        lm = int(self.var_mat.get()[0])
+        if lm == 1:
+            return lm, {"do_hut_cat": self._lay_f("do_hut_cat", "Độ hụt cát")}
+        elif lm == 2:
+            return lm, {"do_hut_dau": self._lay_f("do_hut_dau", "Độ hụt đầu"), "do_hut_duoi": self._lay_f("do_hut_duoi", "Độ hụt đuôi")}
+        elif lm == 3:
+            return lm, {
+                "do_hut_nen": self._lay_f("do_hut_nen", "Độ hụt nền"), "cao_non": self._lay_f("cao_non", "Chiều cao nón"),
+                "dai_chan_non": self._lay_f("dai_chan_non", "Dài chân nón"), "rong_chan_non": self._lay_f("rong_chan_non", "Rộng chân nón")
             }
-
-        elif loai_mat == 4:
-            do_hut_nen = self._lay_so_thuc("do_hut_nen", "Độ hụt lớp cát nền")
-            cao_num = self._lay_so_thuc("cao_num", "Chiều cao đỉnh núm cát")
-            dai_chan_num = self._lay_so_thuc("dai_chan_num", "Chiều dài chân đụn cát")
-            rong_chan_num = self._lay_so_thuc("rong_chan_num", "Chiều rộng chân đụn cát")
-
-            if cao_num < 0 or dai_chan_num <= 0 or rong_chan_num <= 0:
-                raise ValueError("Chiều cao đỉnh núm phải >= 0 và các kích thước chân đụn cát phải > 0.")
-
-            if dai_chan_num > chieu_dai:
-                raise ValueError(f"Chiều dài chân đụn cát ({dai_chan_num}m) vượt quá chiều dài khoang ({chieu_dai}m).")
-            if rong_chan_num > chieu_rong:
-                raise ValueError(f"Chiều rộng chân đụn cát ({rong_chan_num}m) vượt quá chiều rộng khoang ({chieu_rong}m).")
-
-            thong_so_mat = {
-                "do_hut_nen": do_hut_nen,
-                "cao_num": cao_num,
-                "dai_chan_num": dai_chan_num,
-                "rong_chan_num": rong_chan_num,
+        elif lm == 4:
+            return lm, {
+                "do_hut_nen": self._lay_f("do_hut_nen", "Độ hụt nền"), "cao_num": self._lay_f("cao_num", "Cao đỉnh núm"),
+                "dai_chan_num": self._lay_f("dai_chan_num", "Dài chân đụn"), "rong_chan_num": self._lay_f("rong_chan_num", "Rộng chân đụn")
             }
+        return 1, {}
 
-        else:
-            raise ValueError("Dạng bề mặt cát không hợp lệ.")
-
-        khoi_luong_rieng = self._lay_so_thuc("khoi_luong_rieng", "Khối lượng riêng của cát")
-        if khoi_luong_rieng <= 0:
-            raise ValueError("Khối lượng riêng của cát phải lớn hơn 0.")
-
-        return chieu_dai, chieu_rong, loai_day, thong_so_day, loai_mat, thong_so_mat, khoi_luong_rieng
-
-    def thuc_hien_tinh_toan(self):
+    def _ve_do_hoa(self):
         try:
-            (
-                chieu_dai,
-                chieu_rong,
-                loai_day,
-                thong_so_day,
-                loai_mat,
-                thong_so_mat,
-                khoi_luong_rieng,
-            ) = self._doc_du_lieu_dau_vao()
+            layers = self._doc_layers()
+            loai_mat, thong_so_mat = self._doc_mat()
+            model = MultiTierBargeModel(layers, loai_mat, thong_so_mat)
+        except Exception:
+            return
 
-            mo_hinh = MoHinhTheTichCat(
-                chieu_dai=chieu_dai,
-                chieu_rong=chieu_rong,
-                loai_day=loai_day,
-                thong_so_day=thong_so_day,
-                loai_mat=loai_mat,
-                thong_so_mat=thong_so_mat,
-            )
+        L_ref = layers[0].params.get("L", 60.0)
+        z_total = model.total_height
 
-            the_tich = mo_hinh.tinh_the_tich(so_bac=120)
-            khoi_luong = the_tich * khoi_luong_rieng
+        C_HULL_LINE = '#0f172a'
+        C_LINE_RED = '#dc2626'
+        C_DIVIDER = '#2563eb'
+        C_DIM = '#0284c7'
 
-            self.o_ket_qua.delete("1.0", tk.END)
+        def dim_h(ax, x1, x2, z, text, offset_z=0.0, text_above=True, color=C_DIM):
+            zl = z + offset_z
+            ax.plot([x1, x1], [z, zl + (0.06 if offset_z>=0 else -0.06)], color=color, lw=0.7, linestyle=':', clip_on=True)
+            ax.plot([x2, x2], [z, zl + (0.06 if offset_z>=0 else -0.06)], color=color, lw=0.7, linestyle=':', clip_on=True)
+            ax.annotate('', xy=(x1, zl), xytext=(x2, zl),
+                        arrowprops=dict(arrowstyle='<->', color=color, lw=1.1, shrinkA=0, shrinkB=0),
+                        annotation_clip=True)
+            tz = zl + (0.10 if text_above else -0.18)
+            ax.text((x1 + x2)/2, tz, text, color=color, fontsize=8.5, fontweight='bold', ha='center', va='center',
+                    bbox=dict(boxstyle='square,pad=0.12', facecolor='#ffffff', edgecolor='none', alpha=0.9),
+                    clip_on=True)
 
-            self.o_ket_qua.insert(
-                tk.END,
-                "=======================================================================\n"
-                "               BÁO CÁO KẾT QUẢ TÍNH THỂ TÍCH & KHỐI LƯỢNG CÁT          \n"
-                "=======================================================================\n\n"
-            )
+        def dim_v(ax, z1, z2, x, text, offset_x=0.0, color=C_DIM):
+            xl = x + offset_x
+            ax.plot([x, xl + (0.15 if offset_x>=0 else -0.15)], [z1, z1], color=color, lw=0.7, linestyle=':', clip_on=True)
+            ax.plot([x, xl + (0.15 if offset_x>=0 else -0.15)], [z2, z2], color=color, lw=0.7, linestyle=':', clip_on=True)
+            ax.annotate('', xy=(xl, z1), xytext=(xl, z2),
+                        arrowprops=dict(arrowstyle='<->', color=color, lw=1.1, shrinkA=0, shrinkB=0),
+                        annotation_clip=True)
+            tx = xl + (0.16 if offset_x>=0 else -0.16)
+            ha = 'left' if offset_x>=0 else 'right'
+            ax.text(tx, (z1 + z2)/2, text, color=color, fontsize=8.5, fontweight='bold', ha=ha, va='center',
+                    bbox=dict(boxstyle='square,pad=0.12', facecolor='#ffffff', edgecolor='none', alpha=0.9),
+                    clip_on=True)
 
-            thong_tin_day = loai_day
-            if loai_day == "Đáy chữ V":
-                nua_rong = chieu_rong / 2.0
-                do_ha_sau_V = math.sqrt(max(thong_so_day["canh_nghieng_V"]**2 - nua_rong**2, 0.0))
-                sau_tim = thong_so_day["sau_man"] + do_ha_sau_V
-                thong_tin_day = f"Đáy chữ V (Sâu mạn = {thong_so_day['sau_man']:.2f}m, Cạnh V = {thong_so_day['canh_nghieng_V']:.2f}m -> Sâu tim = {sau_tim:.2f}m)"
+        def dim_slanted(ax, x1, z1, x2, z2, text, offset=0.42, color=C_DIM):
+            dx = x2 - x1
+            dz = z2 - z1
+            L = math.sqrt(dx**2 + dz**2)
+            if L < 1e-6:
+                return
+            nx = dz / L
+            nz = -dx / L
+            p1_start = (x1, z1)
+            p1_end = (x1 + offset * nx, z1 + offset * nz)
+            p2_start = (x2, z2)
+            p2_end = (x2 + offset * nx, z2 + offset * nz)
+            ax.plot([p1_start[0], p1_end[0] + 0.08*nx], [p1_start[1], p1_end[1] + 0.08*nz], color=color, lw=0.7, linestyle=':', clip_on=True)
+            ax.plot([p2_start[0], p2_end[0] + 0.08*nx], [p2_start[1], p2_end[1] + 0.08*nz], color=color, lw=0.7, linestyle=':', clip_on=True)
+            ax.annotate('', xy=p1_end, xytext=p2_end,
+                        arrowprops=dict(arrowstyle='<->', color=color, lw=1.2, shrinkA=0, shrinkB=0),
+                        annotation_clip=True)
+            mx = (p1_end[0] + p2_end[0]) / 2.0 + 0.12 * nx
+            mz = (p1_end[1] + p2_end[1]) / 2.0 + 0.12 * nz
+            angle = math.degrees(math.atan2(dz, dx))
+            ax.text(mx, mz, text, color=color, fontsize=9.0, fontweight='bold', ha='center', va='center',
+                    rotation=angle,
+                    bbox=dict(boxstyle='square,pad=0.12', facecolor='#ffffff', edgecolor='none', alpha=0.9),
+                    clip_on=True)
 
-            self.o_ket_qua.insert(
-                tk.END,
-                f"1. KÍCH THƯỚC KHOANG CHỨA : Chiều dài = {chieu_dai:.2f} m  |  Chiều rộng = {chieu_rong:.2f} m\n"
-                f"2. LOẠI ĐÁY XÀ LAN        : {thong_tin_day}\n"
-                f"3. DẠNG BỀ MẶT CÁT        : {self.bien_loai_mat.get()}\n"
-                f"4. KHỐI LƯỢNG RIÊNG CÁT   : {khoi_luong_rieng:.3f} tấn/m³\n"
-                "-----------------------------------------------------------------------\n"
-            )
+        def draw_2d_transverse(ax):
+            prev_top_half = 0.0
+            for idx, lay in enumerate(layers):
+                zs, ze, h_lay = model.layer_z_ranges[idx]
+                if idx == 0:
+                    if lay.layer_type == "Đáy bằng":
+                        halfB = lay.params.get("B", 12.0) / 2.0
+                        ax.plot([-halfB, halfB], [zs, zs], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        ax.plot([-halfB, -halfB], [zs, ze], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        ax.plot([halfB, halfB], [zs, ze], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        prev_top_half = halfB
+                        dim_h(ax, -halfB, halfB, zs, "B1", offset_z=-0.35, text_above=False)
+                    elif lay.layer_type == "Đáy chữ V":
+                        halfB = lay.params.get("B", 12.0) / 2.0
+                        ax.plot([-halfB, 0, halfB], [ze, zs, ze], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        prev_top_half = halfB
+                        dim_h(ax, -halfB, halfB, ze, "B1", offset_z=0.0, text_above=True)
+                        dim_slanted(ax, -halfB, ze, 0, zs, "C1", offset=0.45)
+                    elif lay.layer_type == "Đáy hộp hình thang":
+                        halfTop = lay.params.get("B_top", 12.0) / 2.0
+                        halfBot = lay.params.get("B_bot", 7.5) / 2.0
+                        ax.plot([-halfTop, -halfBot, halfBot, halfTop], [ze, zs, zs, ze], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        prev_top_half = halfTop
+                        dim_h(ax, -halfBot, halfBot, zs, "B1_bot", offset_z=-0.35, text_above=False)
+                    
+                    dim_v(ax, zs, ze, -prev_top_half, "H1", offset_x=-0.9)
+                    if len(layers) > 1:
+                        ax.plot([-prev_top_half, prev_top_half], [ze, ze], color=C_DIVIDER, lw=2.0, linestyle='-', clip_on=True)
+                else:
+                    if lay.layer_type == "Hình hộp chữ nhật":
+                        halfB = lay.params.get("B", 12.0) / 2.0
+                        if abs(halfB - prev_top_half) > 0.05:
+                            ax.plot([-prev_top_half, -halfB], [zs, zs], color=C_HULL_LINE, lw=2.4, clip_on=True)
+                            ax.plot([prev_top_half, halfB], [zs, zs], color=C_HULL_LINE, lw=2.4, clip_on=True)
+                        ax.plot([-halfB, -halfB], [zs, ze], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        ax.plot([halfB, halfB], [zs, ze], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        prev_top_half = halfB
+                        dim_h(ax, -halfB, halfB, zs, f"B{idx+1}", offset_z=0.0, text_above=True)
+                    elif lay.layer_type == "Hình hộp thang":
+                        halfTop = lay.params.get("B_top", 13.8) / 2.0
+                        halfBot = lay.params.get("B_bot", 12.0) / 2.0
+                        if abs(halfBot - prev_top_half) > 0.05:
+                            ax.plot([-prev_top_half, -halfBot], [zs, zs], color=C_HULL_LINE, lw=2.4, clip_on=True)
+                            ax.plot([prev_top_half, halfBot], [zs, zs], color=C_HULL_LINE, lw=2.4, clip_on=True)
+                        ax.plot([-halfBot, -halfTop], [zs, ze], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        ax.plot([halfBot, halfTop], [zs, ze], color=C_HULL_LINE, lw=2.8, clip_on=True)
+                        prev_top_half = halfTop
+                        dim_h(ax, -halfBot, halfBot, zs, f"B{idx+1}_bot", offset_z=0.0, text_above=True)
 
-            self.o_ket_qua.insert(
-                tk.END,
-                f"▶▶ TỔNG THỂ TÍCH CÁT (V)  : {the_tich:,.3f} mét khối (m³)\n"
-                f"▶▶ TỔNG KHỐI LƯỢNG CÁT (M): {khoi_luong:,.3f} tấn\n"
-                "-----------------------------------------------------------------------\n"
-            )
+                    dim_v(ax, zs, ze, -prev_top_half, f"H{idx+1}", offset_x=-0.9)
+                    if idx < len(layers) - 1:
+                        ax.plot([-prev_top_half, prev_top_half], [ze, ze], color=C_DIVIDER, lw=2.0, linestyle='-', clip_on=True)
 
-        except Exception as loi:
-            messagebox.showerror("Thông báo kiểm tra nhập liệu", str(loi))
+                ax.annotate(f" {lay.name}", xy=(prev_top_half, (zs+ze)/2), xytext=(prev_top_half + 2.0, (zs+ze)/2),
+                            arrowprops=dict(arrowstyle="->", color=C_DIVIDER, lw=1.4),
+                            fontsize=9.0, fontweight='bold', color=C_DIVIDER, va='center', annotation_clip=True)
 
-    def xoa_ket_qua(self):
-        self.o_ket_qua.delete("1.0", tk.END)
-        self.o_ket_qua.insert(
-            tk.END,
-            "💡 Hướng dẫn: Xem sơ đồ 3D - Mặt cắt - Mặt bằng bên phải, nhập các số đo tương ứng rồi bấm nút '▶ TÍNH THỂ TÍCH & KHỐI LƯỢNG'.\n"
-        )
+            ax.plot([-prev_top_half, prev_top_half], [z_total, z_total], color=C_HULL_LINE, lw=2.8, clip_on=True)
+            last_lay = layers[-1]
+            if "B_top" in last_lay.params:
+                dim_h(ax, -prev_top_half, prev_top_half, z_total, f"B{len(layers)}_top", offset_z=0.25, text_above=True)
+            elif "B" in last_lay.params:
+                dim_h(ax, -prev_top_half, prev_top_half, z_total, f"B{len(layers)}", offset_z=0.25, text_above=True)
 
+            ax.axhline(z_total, color=C_LINE_RED, linestyle='--', lw=1.4, clip_on=True)
+            ax.text(0, z_total + 0.42, "MỐC MÉP TRÊN (0.0m)", color=C_LINE_RED, fontsize=9.0, fontweight='bold', ha='center', clip_on=True)
+
+            D_mat_mid = model.do_sau_mat_cat(L_ref/2, 0, L_ref)
+            z_sand_mid = max(z_total - D_mat_mid, 0.0)
+            ax.plot([-prev_top_half * 0.95, prev_top_half * 0.95], [z_sand_mid, z_sand_mid], color='#b45309', lw=2.0, clip_on=True)
+            ax.text(0, z_sand_mid - 0.22, "MẶT CÁT", color='#78350f', fontsize=9.0, fontweight='bold', ha='center', clip_on=True)
+            dim_v(ax, z_sand_mid, z_total, prev_top_half, "Độ hụt (D)", offset_x=0.85, color='#b45309')
+
+            ax.set_title(f"1. MẶT CẮT NGANG KHỔ LỚN (LĂN CHUỘT ZOOM - KÉO ĐỂ PAN - DOUBLE CLICK RESET)", fontsize=10.5, fontweight='bold', color='#0b2545', pad=8)
+            ax.set_aspect('equal')
+            for spine in ax.spines.values():
+                spine.set_visible(True)
+                spine.set_color('#cbd5e1')
+                spine.set_linewidth(1.4)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_facecolor('#f8fafc')
+
+        def draw_2d_longitudinal(ax):
+            ax.axhline(z_total, color=C_LINE_RED, linestyle='--', lw=1.2)
+            ax.text(L_ref/2, z_total + 0.22, 'MÉP TRÊN THÀNH XÀ LAN (0.0m)', color=C_LINE_RED, fontsize=8.5, fontweight='bold', ha='center')
+            for idx, lay in enumerate(layers):
+                zs, ze, h_lay = model.layer_z_ranges[idx]
+                ax.plot([0, L_ref], [zs, zs], color='#64748b', linestyle=':', lw=1.0)
+                ax.plot([0, 0], [zs, ze], color='#334155', lw=2)
+                ax.plot([L_ref, L_ref], [zs, ze], color='#334155', lw=2)
+            x_line = np.linspace(0, L_ref, 100)
+            z_sand_line = np.array([max(z_total - model.do_sau_mat_cat(xi, 0, L_ref), 0.0) for xi in x_line])
+            ax.fill_between(x_line, 0, z_sand_line, color='#fef08a', alpha=0.85, edgecolor='#ca8a04', lw=1.2)
+            ax.plot(x_line, z_sand_line, color='#ca8a04', lw=2.0)
+            dim_h(ax, 0, L_ref, 0, "Chiều dài khoang (L)", offset_z=-0.45, text_above=False)
+            dim_v(ax, z_sand_line[-1], z_total, L_ref, "Độ hụt (D)", offset_x=2.4, color='#b45309')
+            ax.set_title(f"2. MẶT CẮT DỌC CHIỀU DÀI & ĐỘ HỤT CÁT", fontsize=10.0, fontweight='bold', color='#0b2545', pad=6)
+            ax.set_xlim(-6, L_ref + 10)
+            ax.set_ylim(-0.8, z_total + 0.8)
+            ax.axis('off')
+
+        def draw_3d_model(ax):
+            tier_colors = ['#0284c7', '#2563eb', '#4f46e5', '#7c3aed']
+            def get_ring(z_lv, half_w, length=L_ref):
+                return np.array([
+                    [0, -half_w, z_lv],
+                    [length, -half_w, z_lv],
+                    [length, half_w, z_lv],
+                    [0, half_w, z_lv],
+                    [0, -half_w, z_lv]
+                ])
+
+            prev_half_top = 0.0
+            for idx, lay in enumerate(layers):
+                zs, ze, h_lay = model.layer_z_ranges[idx]
+                col = tier_colors[idx % len(tier_colors)]
+                if idx == 0:
+                    if lay.layer_type == "Đáy bằng":
+                        halfB = lay.params.get("B", 12.0) / 2.0
+                        r_bot = get_ring(zs, halfB)
+                        r_top = get_ring(ze, halfB)
+                        ax.plot(r_bot[:,0], r_bot[:,1], r_bot[:,2], color='#0ea5e9', lw=2.2)
+                        if len(layers) > 1:
+                            ax.plot(r_top[:,0], r_top[:,1], r_top[:,2], color='#2563eb', lw=2.4)
+                        for c in range(4):
+                            ax.plot([r_bot[c,0], r_top[c,0]], [r_bot[c,1], r_top[c,1]], [r_bot[c,2], r_top[c,2]], color=col, lw=1.6)
+                        prev_half_top = halfB
+                    elif lay.layer_type == "Đáy chữ V":
+                        halfB = lay.params.get("B", 12.0) / 2.0
+                        ax.plot([0, L_ref], [0, 0], [zs, zs], color='#0284c7', lw=2.6)
+                        r_top = get_ring(ze, halfB)
+                        if len(layers) > 1:
+                            ax.plot(r_top[:,0], r_top[:,1], r_top[:,2], color='#2563eb', lw=2.4)
+                        for x_pt in [0, L_ref]:
+                            ax.plot([x_pt, x_pt], [-halfB, 0], [ze, zs], color=col, lw=2.0)
+                            ax.plot([x_pt, x_pt], [halfB, 0], [ze, zs], color=col, lw=2.0)
+                        prev_half_top = halfB
+                    elif lay.layer_type == "Đáy hộp hình thang":
+                        halfTop = lay.params.get("B_top", 12.0) / 2.0
+                        halfBot = lay.params.get("B_bot", 7.5) / 2.0
+                        r_bot = get_ring(zs, halfBot)
+                        r_top = get_ring(ze, halfTop)
+                        ax.plot(r_bot[:,0], r_bot[:,1], r_bot[:,2], color='#0ea5e9', lw=2.2)
+                        if len(layers) > 1:
+                            ax.plot(r_top[:,0], r_top[:,1], r_top[:,2], color='#2563eb', lw=2.4)
+                        for c in range(4):
+                            ax.plot([r_bot[c,0], r_top[c,0]], [r_bot[c,1], r_top[c,1]], [r_bot[c,2], r_top[c,2]], color=col, lw=1.6)
+                        prev_half_top = halfTop
+                    if len(layers) > 1:
+                        ax.plot([0, 0], [-prev_half_top, prev_half_top], [ze, ze], color='#2563eb', lw=2.2)
+                        ax.plot([L_ref, L_ref], [-prev_half_top, prev_half_top], [ze, ze], color='#2563eb', lw=2.2)
+                else:
+                    if lay.layer_type == "Hình hộp chữ nhật":
+                        halfB = lay.params.get("B", 12.0) / 2.0
+                        r_bot = get_ring(zs, halfB)
+                        r_top = get_ring(ze, halfB)
+                        if abs(halfB - prev_half_top) > 0.05:
+                            for c in range(4):
+                                r_prev = get_ring(zs, prev_half_top)
+                                ax.plot([r_prev[c,0], r_bot[c,0]], [r_prev[c,1], r_bot[c,1]], [zs, zs], color='#64748b', lw=1.4)
+                        if idx < len(layers) - 1:
+                            ax.plot(r_top[:,0], r_top[:,1], r_top[:,2], color=col, lw=2.4)
+                        for c in range(4):
+                            ax.plot([r_bot[c,0], r_top[c,0]], [r_bot[c,1], r_top[c,1]], [r_bot[c,2], r_top[c,2]], color=col, lw=1.6)
+                        prev_half_top = halfB
+                    elif lay.layer_type == "Hình hộp thang":
+                        halfTop = lay.params.get("B_top", 13.8) / 2.0
+                        halfBot = lay.params.get("B_bot", 12.0) / 2.0
+                        r_bot = get_ring(zs, halfBot)
+                        r_top = get_ring(ze, halfTop)
+                        if abs(halfBot - prev_half_top) > 0.05:
+                            for c in range(4):
+                                r_prev = get_ring(zs, prev_half_top)
+                                ax.plot([r_prev[c,0], r_bot[c,0]], [r_prev[c,1], r_bot[c,1]], [zs, zs], color='#64748b', lw=1.4)
+                        if idx < len(layers) - 1:
+                            ax.plot(r_top[:,0], r_top[:,1], r_top[:,2], color=col, lw=2.4)
+                        for c in range(4):
+                            ax.plot([r_bot[c,0], r_top[c,0]], [r_bot[c,1], r_top[c,1]], [r_bot[c,2], r_top[c,2]], color=col, lw=1.6)
+                        prev_half_top = halfTop
+
+                ax.text(-3, 0, (zs+ze)/2, f"◀ {lay.name}", color=col, fontsize=9.5, fontweight='bold')
+
+            r_topmost = get_ring(z_total, prev_half_top)
+            ax.plot(r_topmost[:,0], r_topmost[:,1], r_topmost[:,2], color='#dc2626', lw=2.4, linestyle='--')
+
+            top_half_w = prev_half_top
+            x_g = np.linspace(0, L_ref, 20)
+            y_g = np.linspace(-top_half_w * 0.95, top_half_w * 0.95, 12)
+            X, Y = np.meshgrid(x_g, y_g)
+            Z_3d = np.zeros_like(X)
+            for i in range(X.shape[0]):
+                for j in range(X.shape[1]):
+                    D_mat = model.do_sau_mat_cat(X[i, j], Y[i, j], L_ref)
+                    Z_3d[i, j] = max(z_total - D_mat, 0.0)
+
+            ax.plot_surface(X, Y, Z_3d, color='#fde047', alpha=0.80, edgecolor='#ca8a04', lw=0.1, shade=True)
+            ax.set_title(f"MÔ HÌNH 3D TOÀN KHUNG (XOAY 360° - {len(layers)} TẦNG KẾT CẤU)", fontsize=11, fontweight='bold', color='#0b2545', pad=10)
+            ax.set_xlim(-4, L_ref+4)
+            ax.set_ylim(-9.0, 9.0)
+            ax.set_zlim(-0.3, z_total + 1.4)
+            ax.view_init(elev=24, azim=-55)
+            ax.set_axis_off()
+
+        # 1. TAB 1: 2D KHỔ LỚN
+        self.fig_2d.clf()
+        gs2d = self.fig_2d.add_gridspec(2, 1, height_ratios=[1.45, 1.0], hspace=0.30)
+        self.ax_trans = self.fig_2d.add_subplot(gs2d[0])
+        ax_long_2d = self.fig_2d.add_subplot(gs2d[1])
+        draw_2d_transverse(self.ax_trans)
+        if self.custom_trans_limits is not None:
+            self.ax_trans.set_xlim(self.custom_trans_limits[0])
+            self.ax_trans.set_ylim(self.custom_trans_limits[1])
+        else:
+            self.ax_trans.set_xlim(-11.0, 13.0)
+            self.ax_trans.set_ylim(-0.8, z_total + 0.8)
+        draw_2d_longitudinal(ax_long_2d)
+        self.fig_2d.subplots_adjust(left=0.04, right=0.96, top=0.94, bottom=0.06, hspace=0.35)
+        self.canvas_2d.draw()
+
+        # 2. TAB 2: 3D KHỔ LỚN
+        self.fig_3d.clf()
+        ax_3d_tab = self.fig_3d.add_subplot(1, 1, 1, projection='3d')
+        draw_3d_model(ax_3d_tab)
+        self.fig_3d.subplots_adjust(left=0.02, right=0.98, top=0.94, bottom=0.02)
+        self.canvas_3d.draw()
+
+    def thuc_hien_tinh(self):
+        try:
+            layers = self._doc_layers()
+            loai_mat, thong_so_mat = self._doc_mat()
+            rho = self._lay_f("rho", "Khối lượng riêng")
+            if rho <= 0: raise ValueError("Khối lượng riêng phải > 0.")
+
+            model = MultiTierBargeModel(layers, loai_mat, thong_so_mat)
+            the_tich = model.tinh_tong_the_tich()
+            khoi_luong = the_tich * rho
+
+            self.txt_kq.delete("1.0", tk.END)
+            msg = "=======================================================\n"
+            msg += "       BÁO CÁO TÍNH THỂ TÍCH CÁT XÀ LAN V2 (ĐA TẦNG)   \n"
+            msg += "=======================================================\n"
+            msg += f"• Số lượng tầng kết cấu: {len(layers)} phần xếp chồng\n"
+            for idx, lay in enumerate(layers):
+                msg += f"  + {lay.name}: {lay.layer_type}\n"
+                if lay.layer_type == "Đáy chữ V":
+                    msg += f"    (Cạnh xiên C1 = {lay.params.get('C'):.2f}m ➔ H1 tính theo Pytago = {lay.params.get('H'):.2f}m)\n"
+            msg += f"• Kiểu bề mặt cát      : Option {loai_mat}\n"
+            msg += f"• Khối lượng riêng cát : {rho:.2f} tấn/m³\n"
+            msg += "-------------------------------------------------------\n"
+            msg += f"▶▶ TỔNG THỂ TÍCH (V)  : {the_tich:,.3f} m³\n"
+            msg += f"▶▶ TỔNG KHỐI LƯỢNG (M): {khoi_luong:,.3f} tấn\n"
+            msg += "=======================================================\n"
+            self.txt_kq.insert(tk.END, msg)
+
+        except Exception as e:
+            messagebox.showerror("Thông báo nhập liệu", str(e))
+
+    def reset_form(self):
+        self.var_p1.set("Đáy hộp hình thang")
+        self.var_p2.set("Hình hộp thang")
+        self.var_p3.set("Không có phần 3")
+        self.var_p4.set("Không có phần 4")
+        self.var_mat.set("1 - Mặt phẳng (Dàn trải đều)")
+        self.custom_trans_limits = None
+        self._cap_nhat_toan_bo()
 
 def main():
     root = tk.Tk()
@@ -779,10 +949,8 @@ def main():
             style.theme_use("vista")
     except Exception:
         pass
-
-    UngDungTinhTheTich(root)
+    UngDungV2(root)
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()
