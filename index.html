@@ -371,7 +371,7 @@
                     </div>
 
                     <!-- ĐƯỜNG DẪN WEB APP GOOGLE SCRIPT ĐÃ ĐƯỢC ẨN VÀO MÃ NGUỒN -->
-                    <input id="inp_gas_url" type="hidden" value="https://script.google.com/macros/s/AKfycbw6Savpg7VtZSSrYtrlp53xUR4uUQOfHRFNO8DkiST1sueqBXIypSFrYfvPX24xMJiD/exec">
+                    <input id="inp_gas_url" type="hidden" value="https://script.google.com/macros/s/AKfycbwjTNyNUyDWV2ofZHH83OA7L8HkRa0kJbjPYji3TGJuQfAqq3WDMNleKGs07GfrE8Ja/exec">
 
                     <!-- NÚT LƯU GOOGLE SHEET TO RÕ -->
                     <button id="btn_send_sheet" onclick="guiLenGoogleSheet()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition cursor-pointer">
@@ -1454,7 +1454,7 @@
         }
 
         async function guiLenGoogleSheet() {
-            const gasUrl = (document.getElementById("inp_gas_url") ? document.getElementById("inp_gas_url").value.trim() : "") || "https://script.google.com/macros/s/AKfycbw6Savpg7VtZSSrYtrlp53xUR4uUQOfHRFNO8DkiST1sueqBXIypSFrYfvPX24xMJiD/exec";
+            const gasUrl = (document.getElementById("inp_gas_url") ? document.getElementById("inp_gas_url").value.trim() : "") || "https://script.google.com/macros/s/AKfycbwjTNyNUyDWV2ofZHH83OA7L8HkRa0kJbjPYji3TGJuQfAqq3WDMNleKGs07GfrE8Ja/exec";
             const bargeCode = document.getElementById('inp_barge_code').value.trim();
             const note = document.getElementById('inp_barge_note').value.trim();
             const statusBox = document.getElementById('sheet_status_box');
@@ -1620,7 +1620,7 @@
             renderFormFields();
             initSvgZoomPan();
 
-            const savedUrl = localStorage.getItem('sand_barge_gas_url') || 'https://script.google.com/macros/s/AKfycbw6Savpg7VtZSSrYtrlp53xUR4uUQOfHRFNO8DkiST1sueqBXIypSFrYfvPX24xMJiD/exec';
+            const savedUrl = localStorage.getItem('sand_barge_gas_url') || 'https://script.google.com/macros/s/AKfycbwjTNyNUyDWV2ofZHH83OA7L8HkRa0kJbjPYji3TGJuQfAqq3WDMNleKGs07GfrE8Ja/exec';
             if (savedUrl) {
                 document.getElementById('inp_gas_url').value = savedUrl;
             }
