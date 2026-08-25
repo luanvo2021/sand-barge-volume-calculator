@@ -35,10 +35,9 @@ class MultiTierBargeCalculator:
         for lay in self.layers:
             if lay['type'] == "Đáy chữ V" and 'C' in lay:
                 half_b = lay['B'] / 2.0
-                if lay['C'] > half_b:
-                    lay['H'] = math.sqrt(lay['C']**2 - half_b**2)
-                else:
-                    lay['H'] = lay.get('H', 0.6)
+                if lay['C'] <= half_b:
+                    raise ValueError(f"Lỗi hình học Đáy chữ V '{lay.get('name', 'Phần 1')}': Cạnh nghiêng C={lay['C']}m phải lớn hơn nửa bề rộng đáy B/2={half_b}m")
+                lay['H'] = math.sqrt(lay['C']**2 - half_b**2)
             
             h = lay['H']
             self.z_ranges.append((z_acc, z_acc + h, h))

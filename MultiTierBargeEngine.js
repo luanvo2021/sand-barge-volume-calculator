@@ -29,7 +29,10 @@ function tinhTheTichCatXaLan(layers, surfaceType, surfaceParams, rho = 1.65) {
     for (let lay of layers) {
         if (lay.type === "Đáy chữ V" && (lay.C !== undefined)) {
             const halfB = lay.B / 2;
-            lay.H = lay.C > halfB ? Math.sqrt(lay.C * lay.C - halfB * halfB) : (lay.H ?? 0.6);
+            if (lay.C <= halfB) {
+                throw new Error(`Lỗi hình học Đáy chữ V "${lay.name || 'Phần 1'}": Cạnh nghiêng C=${lay.C}m phải lớn hơn nửa bề rộng đáy B/2=${halfB}m`);
+            }
+            lay.H = Math.sqrt(lay.C * lay.C - halfB * halfB);
         }
         zRanges.push({ start: zTotal, end: zTotal + lay.H, h: lay.H });
         zTotal += lay.H;
